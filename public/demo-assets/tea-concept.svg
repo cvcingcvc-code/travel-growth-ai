@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#EBE6DA"/>
+  <circle cx="400" cy="270" r="120" fill="#B48446" opacity="0.25"/>
+  <circle cx="400" cy="270" r="80" fill="#B05B43" opacity="0.22"/>
+  <rect x="200" y="420" width="400" height="90" rx="6" fill="#FCFBF8" stroke="#DFD9CB"/>
+  <text x="400" y="460" text-anchor="middle" fill="#1A2420" font-size="20" font-family="sans-serif">围炉煮茶氛围 · AI 概念示意图</text>
+  <text x="400" y="488" text-anchor="middle" fill="#B05B43" font-size="13" font-family="sans-serif">非真实景区实景照片 · 仅作视觉排版参考</text>
+</svg>

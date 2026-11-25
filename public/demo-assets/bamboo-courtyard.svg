@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#183A30"/>
+  <rect x="40" y="40" width="720" height="520" fill="#214E41" stroke="#7A9386" stroke-width="2"/>
+  <path d="M120 560 L135 120 M240 560 L250 90 M360 560 L355 140 M520 560 L530 110 M660 560 L650 150" stroke="#4C7364" stroke-width="10" stroke-linecap="round"/>
+  <rect x="250" y="390" width="300" height="110" rx="6" fill="#E6E0D3" opacity="0.9"/>
+  <text x="400" y="440" text-anchor="middle" fill="#183A30" font-size="22" font-family="sans-serif">听竹私汤双卧合院 · 实景占位图</text>
+  <text x="400" y="472" text-anchor="middle" fill="#53605A" font-size="14" font-family="sans-serif">演示素材（版权：企业自有）</text>
+</svg>
