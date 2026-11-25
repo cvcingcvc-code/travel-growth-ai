@@ -24,7 +24,7 @@ import {
   saveDraftVersion,
 } from '@/lib/services/creation.service';
 import { createAsset } from '@/lib/services/asset.service';
-import { updateProviderConfig } from '@/lib/providers/registry';
+import { updateProviderConfig, validateLocalEndpointSecurity } from '@/lib/providers/registry';
 import { ProviderUnconfiguredError } from '@/lib/providers/types';
 
 describe('TravelGrowth AI 第一阶段 P0 完整验收测试', () => {
@@ -184,5 +184,9 @@ describe('TravelGrowth AI 第一阶段 P0 完整验收测试', () => {
         humanConfirmed: false,
       })
     ).toThrow(/必须经过人工确认/);
+
+    expect(() =>
+      validateLocalEndpointSecurity('ollama', 'https://public-ollama.example.com')
+    ).toThrow(/禁止将无认证的本地模型服务/);
   });
 });

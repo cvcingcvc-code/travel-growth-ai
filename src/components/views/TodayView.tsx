@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, BookOpen, CheckCircle2, Clock, Cpu, Radar, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen, CheckCircle2, Clock, Cpu, Radar, Sparkles, Layers } from 'lucide-react';
 import type { NavTab } from '../AppShell';
+import { SYSTEM_CAPABILITY_MATRIX } from '@/lib/demo/demo-mode';
 
 interface DashboardData {
   organization: { id: string; name: string; is_demo: number };
@@ -210,6 +211,45 @@ export function TodayView({
           </div>
         </section>
       </div>
+
+      {/* 系统能力与接入状态矩阵 */}
+      <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ebe6da] pb-2">
+          <h2 className="text-sm font-semibold text-[#183a30] flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[#4c7364]" />
+            系统功能接入状态矩阵（透明区分真实能力 / Demo / 预留 / 未接通）
+          </h2>
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <button onClick={() => onNavigate('intelligence')} className="px-2 py-0.5 rounded bg-[#f5f2eb] hover:bg-[#ebe6da] text-[#183a30]">1. 情报采集 →</button>
+            <button onClick={() => onNavigate('analysis')} className="px-2 py-0.5 rounded bg-[#f5f2eb] hover:bg-[#ebe6da] text-[#183a30]">2. 爆款分析 →</button>
+            <button onClick={() => onNavigate('knowledge')} className="px-2 py-0.5 rounded bg-[#f5f2eb] hover:bg-[#ebe6da] text-[#183a30]">3. 知识检索 →</button>
+            <button onClick={() => onNavigate('creation')} className="px-2 py-0.5 rounded bg-[#183a30] text-white">4. AI 图文创作</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {SYSTEM_CAPABILITY_MATRIX.map((cap) => (
+            <div key={cap.name} className="p-3 rounded bg-[#f5f2eb] border border-[#e5dfd2] text-xs space-y-1">
+              <div className="flex items-start justify-between gap-1.5">
+                <span className="font-medium text-[#1a2420]">{cap.name}</span>
+                <span
+                  className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] ${
+                    cap.status === 'verified'
+                      ? 'bg-[#e3ede8] text-[#183a30]'
+                      : cap.status === 'demo'
+                      ? 'bg-[#ebe6da] text-[#8a6534]'
+                      : cap.status === 'reserved'
+                      ? 'bg-[#e6ebf0] text-[#3a556e]'
+                      : 'bg-[#f4e5e1] text-[#b05b43]'
+                  }`}
+                >
+                  {cap.label}
+                </span>
+              </div>
+              <div className="text-[11px] text-[#53605a] leading-relaxed">{cap.detail}</div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

@@ -133,6 +133,8 @@ export function ModelsView({ orgId }: { orgId: string }) {
                 <option value="claude">Anthropic Claude</option>
                 <option value="deepseek">DeepSeek</option>
                 <option value="ollama">Ollama (本地)</option>
+                <option value="lm_studio">LM Studio (本地)</option>
+                <option value="vllm">vLLM (私有部署)</option>
                 <option value="openai_compatible">OpenAI-Compatible</option>
               </select>
               <input
@@ -147,6 +149,18 @@ export function ModelsView({ orgId }: { orgId: string }) {
                 className="px-2.5 py-1.5 rounded border border-[#dfd9cb] bg-white"
               />
             </div>
+
+            <input
+              value={p.baseUrl}
+              onBlur={(e) => handleSaveProvider(p, { baseUrl: e.target.value })}
+              onChange={(e) =>
+                setProviders((prev) =>
+                  prev.map((x) => (x.capability === p.capability ? { ...x, baseUrl: e.target.value } : x))
+                )
+              }
+              placeholder="自定义 Base URL（可选，如 http://localhost:11434；非本机地址须配置鉴权）"
+              className="w-full px-2.5 py-1.5 text-xs rounded border border-[#dfd9cb] bg-white"
+            />
 
             <div className="flex items-center justify-between text-[11px] text-[#53605a]">
               <span>{p.statusNote}</span>

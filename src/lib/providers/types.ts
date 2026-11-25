@@ -6,7 +6,18 @@ export type AIProviderId =
   | 'claude'
   | 'deepseek'
   | 'ollama'
+  | 'lm_studio'
+  | 'vllm'
   | 'openai_compatible';
+
+export interface ProviderCapabilityDeclaration {
+  supportsText: boolean;
+  supportsVision: boolean;
+  supportsImage: boolean;
+  supportsEmbedding: boolean;
+  supportsJsonMode: boolean;
+  requiresAuthToken: boolean;
+}
 
 export interface ProviderConfigRecord {
   id: string;
@@ -24,10 +35,12 @@ export interface ProviderRuntimeStatus {
   provider: AIProviderId;
   modelName: string;
   baseUrl: string;
+  timeoutMs: number;
   hasValidKey: boolean;
   allowTestMode: boolean;
   status: 'connected' | 'test_mode_ready' | 'unconfigured';
   statusNote: string;
+  capabilities: ProviderCapabilityDeclaration;
 }
 
 export interface TextGenerationRequest {
@@ -36,6 +49,7 @@ export interface TextGenerationRequest {
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
+  timeoutMs?: number;
   testModeFallback?: () => string;
 }
 

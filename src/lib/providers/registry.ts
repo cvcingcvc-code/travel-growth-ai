@@ -3,6 +3,7 @@ import { newId, requireOrgAccess } from '../db/tenant';
 import type {
   AICapability,
   AIProviderId,
+  ProviderCapabilityDeclaration,
   ProviderConfigRecord,
   ProviderRuntimeStatus,
   TextGenerationRequest,
@@ -10,7 +11,59 @@ import type {
 } from './types';
 import { ProviderUnconfiguredError } from './types';
 
-function hasEnvCredential(provider: AIProviderId): { hasKey: boolean; note: string } {
+const DEFAULT_TIMEOUT_MS = 30000;
+
+function getCapabilityDeclaration(provider: AIProviderId): ProviderCapabilityDeclaration {
+  switch (provider) {
+    case 'openai':
+    case 'gemini':
+      return {
+        supportsText: true,
+        supportsVision: true,
+        supportsImage: provider === 'openai',
+        supportsEmbedding: true,
+        supportsJsonMode: true,
+        requiresAuthToken: true,
+      };
+    case 'claude':
+    case 'deepseek':
+      return {
+        supportsText: true,
+        supportsVision: provider === 'claude',
+        supportsImage: false,
+        supportsEmbedding: false,
+        supportsJsonMode: true,
+        requiresAuthToken: true,
+      };
+    case 'ollama':
+    case 'lm_studio':
+    case 'vllm':
+    case 'openai_compatible':
+      return {
+        supportsText: true,
+        supportsVision: false,
+        supportsImage: false,
+        supportsEmbedding: true,
+        supportsJsonMode: true,
+        requiresAuthToken: provider === 'openai_compatible',
+      };
+  }
+}
+
+export function validateLocalEndpointSecurity(provider: AIProviderId, baseUrl: string) {
+  if (!baseUrl) return;
+  if (provider === 'ollama' || provider === 'lm_studio' || provider === 'vllm') {
+    const u = new URL(baseUrl);
+    const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(u.hostname);
+    if (!isLocalHost && !process.env.LOCAL_MODEL_AUTH_TOKEN) {
+      throw new Error(
+        `安全拦截：禁止将无认证的本地模型服务 (${provider}) 暴露到非本机公网地址 ${u.hostname}，请先配置内网鉴权或 LOCAL_MODEL_AUTH_TOKEN。`
+      );
+    }
+  }
+}
+
+function hasEnvCredential(provider: AIProviderId, baseUrl?: string): { hasKey: boolean; note: string } {
   switch (provider) {
     case 'openai':
       return process.env.OPENAI_API_KEY
@@ -29,13 +82,21 @@ function hasEnvCredential(provider: AIProviderId): { hasKey: boolean; note: stri
         ? { hasKey: true, note: '已检测到 DEEPSEEK_API_KEY' }
         : { hasKey: false, note: '未配置 DEEPSEEK_API_KEY' };
     case 'ollama':
-      return process.env.OLLAMA_BASE_URL
-        ? { hasKey: true, note: `已配置 Ollama 地址 ${process.env.OLLAMA_BASE_URL}` }
+      return process.env.OLLAMA_BASE_URL || baseUrl
+        ? { hasKey: true, note: `已配置 Ollama 地址 ${baseUrl || process.env.OLLAMA_BASE_URL}` }
         : { hasKey: false, note: '未配置 OLLAMA_BASE_URL（如 http://localhost:11434）' };
+    case 'lm_studio':
+      return process.env.LM_STUDIO_BASE_URL || baseUrl
+        ? { hasKey: true, note: `已配置 LM Studio 地址 ${baseUrl || process.env.LM_STUDIO_BASE_URL}` }
+        : { hasKey: false, note: '未配置 LM_STUDIO_BASE_URL（如 http://localhost:1234/v1）' };
+    case 'vllm':
+      return process.env.VLLM_BASE_URL || baseUrl
+        ? { hasKey: true, note: `已配置 vLLM 地址 ${baseUrl || process.env.VLLM_BASE_URL}` }
+        : { hasKey: false, note: '未配置 VLLM_BASE_URL（如 http://localhost:8000/v1）' };
     case 'openai_compatible':
-      return process.env.OPENAI_API_KEY && process.env.OPENAI_BASE_URL
+      return process.env.OPENAI_API_KEY && (baseUrl || process.env.OPENAI_BASE_URL)
         ? { hasKey: true, note: '已检测到 OpenAI-compatible 凭据' }
-        : { hasKey: false, note: '未配置兼容接口 OPENAI_API_KEY / OPENAI_BASE_URL' };
+        : { hasKey: false, note: '未配置兼容接口 OPENAI_API_KEY / Base URL' };
     default:
       return { hasKey: false, note: '未知模型供应商' };
   }
@@ -62,7 +123,8 @@ export function getProviderStatuses(organizationId: string): ProviderRuntimeStat
         ? 'text-embedding-3-small'
         : 'gpt-4o-mini');
     const allowTestMode = row ? Boolean(row.allow_test_mode) : true;
-    const cred = hasEnvCredential(provider);
+    const baseUrl = row?.base_url ?? '';
+    const cred = hasEnvCredential(provider, baseUrl);
 
     let status: ProviderRuntimeStatus['status'] = 'unconfigured';
     if (cred.hasKey) status = 'connected';
@@ -72,13 +134,15 @@ export function getProviderStatuses(organizationId: string): ProviderRuntimeStat
       capability: cap,
       provider,
       modelName,
-      baseUrl: row?.base_url ?? '',
+      baseUrl,
+      timeoutMs: DEFAULT_TIMEOUT_MS,
       hasValidKey: cred.hasKey,
       allowTestMode,
       status,
       statusNote: cred.hasKey
         ? cred.note
         : `${cred.note}${allowTestMode ? '（已启用明确标记的测试模式）' : '（请配置密钥或开启测试模式）'}`,
+      capabilities: getCapabilityDeclaration(provider),
     };
   });
 }
@@ -92,6 +156,9 @@ export function updateProviderConfig(params: {
   allowTestMode: boolean;
 }) {
   requireOrgAccess(params.organizationId);
+  if (params.baseUrl) {
+    validateLocalEndpointSecurity(params.provider, params.baseUrl);
+  }
   const db = getDb();
   db.prepare(
     `INSERT INTO provider_configs (id, organization_id, capability, provider, model_name, base_url, allow_test_mode, updated_at)
@@ -152,18 +219,36 @@ async function callRealTextModel(
   req: TextGenerationRequest
 ): Promise<{ content: string; usage?: TextGenerationResult['usage'] }> {
   const { provider, modelName, baseUrl } = status;
+  const signal = AbortSignal.timeout(req.timeoutMs ?? status.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
-  if (provider === 'openai' || provider === 'deepseek' || provider === 'openai_compatible') {
+  if (
+    provider === 'openai' ||
+    provider === 'deepseek' ||
+    provider === 'openai_compatible' ||
+    provider === 'lm_studio' ||
+    provider === 'vllm'
+  ) {
     const apiKey =
-      provider === 'deepseek' ? process.env.DEEPSEEK_API_KEY : process.env.OPENAI_API_KEY;
+      provider === 'deepseek'
+        ? process.env.DEEPSEEK_API_KEY
+        : provider === 'lm_studio' || provider === 'vllm'
+        ? process.env.LOCAL_MODEL_AUTH_TOKEN || 'local-dev-token'
+        : process.env.OPENAI_API_KEY;
     const endpointBase =
       baseUrl ||
       (provider === 'deepseek'
         ? process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1'
+        : provider === 'lm_studio'
+        ? process.env.LM_STUDIO_BASE_URL || 'http://localhost:1234/v1'
+        : provider === 'vllm'
+        ? process.env.VLLM_BASE_URL || 'http://localhost:8000/v1'
         : process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1');
+
+    validateLocalEndpointSecurity(provider, endpointBase);
 
     const res = await fetch(`${endpointBase.replace(/\/$/, '')}/chat/completions`, {
       method: 'POST',
+      signal,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
@@ -207,6 +292,7 @@ async function callRealTextModel(
 
     const res = await fetch(url, {
       method: 'POST',
+      signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: req.systemPrompt }] },
@@ -242,6 +328,7 @@ async function callRealTextModel(
     const apiKey = process.env.ANTHROPIC_API_KEY;
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey || '',
@@ -275,8 +362,10 @@ async function callRealTextModel(
 
   if (provider === 'ollama') {
     const endpoint = baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    validateLocalEndpointSecurity('ollama', endpoint);
     const res = await fetch(`${endpoint.replace(/\/$/, '')}/api/chat`, {
       method: 'POST',
+      signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: modelName,
@@ -360,7 +449,7 @@ export async function generateTextWithRegistry(
     });
     throw new ProviderUnconfiguredError(
       `文本模型未配置 (${textStatus.provider} / ${textStatus.modelName})`,
-      '请在 .env.local 中配置有效的模型 API Key（如 OPENAI_API_KEY、DEEPSEEK_API_KEY 或 GEMINI_API_KEY），或在「模型配置中心」开启测试模式。'
+      '请在 .env.local 中配置有效的模型 API Key（或 Ollama/LM Studio/vLLM 本地地址），或在「模型配置中心」开启测试模式。'
     );
   }
 

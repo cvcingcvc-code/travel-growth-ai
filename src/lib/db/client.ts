@@ -7,11 +7,17 @@ let dbInstance: DatabaseSync | null = null;
 let currentDbPath: string | null = null;
 
 export function resolveDbPath(): string {
-  const configured = process.env.DATABASE_PATH || './data/travel-growth.db';
+  const configured = process.env.DATABASE_PATH;
   if (configured === ':memory:') return ':memory:';
-  return path.isAbsolute(configured)
-    ? configured
-    : path.resolve(process.cwd(), configured);
+  if (configured) {
+    return path.isAbsolute(configured)
+      ? configured
+      : path.resolve(process.cwd(), configured);
+  }
+  if (process.env.VERCEL === '1') {
+    return '/tmp/travel-growth-demo.db';
+  }
+  return path.resolve(process.cwd(), './data/travel-growth.db');
 }
 
 export function getDb(): DatabaseSync {

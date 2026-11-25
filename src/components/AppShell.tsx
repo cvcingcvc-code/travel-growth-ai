@@ -15,6 +15,8 @@ import {
   Menu,
   X,
   ShieldCheck,
+  RotateCcw,
+  PlayCircle,
 } from 'lucide-react';
 
 export type NavTab =
@@ -70,8 +72,24 @@ export function AppShell({
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [creating, setCreating] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
 
   const activeOrg = orgs.find((o) => o.id === activeOrgId);
+
+  async function handleResetDemo() {
+    setResetting(true);
+    try {
+      await fetch('/api/v1/demo/reset', { method: 'POST' });
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('tg_active_org');
+        window.localStorage.removeItem('tg_demo_drafts');
+        window.location.reload();
+      }
+    } finally {
+      setResetting(false);
+    }
+  }
 
   async function handleSubmitOrg(e: React.FormEvent) {
     e.preventDefault();
@@ -165,6 +183,22 @@ export function AppShell({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowGuideModal(true)}
+              className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded border border-[#dfd9cb] bg-[#f5f2eb] hover:bg-[#ebe6da] text-[#183a30] text-xs font-medium"
+            >
+              <PlayCircle className="w-3.5 h-3.5 text-[#4c7364]" />
+              <span>演示引导</span>
+            </button>
+            <button
+              onClick={handleResetDemo}
+              disabled={resetting}
+              title="一键重置演示数据"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded border border-[#dfd9cb] bg-white hover:bg-[#f5f2eb] text-[#53605a] text-xs disabled:opacity-50"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${resetting ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{resetting ? '重置中...' : '重置演示'}</span>
+            </button>
             <div className="flex items-center gap-1.5 bg-[#f5f2eb] border border-[#dfd9cb] rounded px-2.5 py-1.5">
               <Building2 className="w-4 h-4 text-[#4c7364]" />
               <select
@@ -289,6 +323,39 @@ export function AppShell({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* 新用户演示引导弹窗 */}
+      {showGuideModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-[#fcfbf8] border border-[#dfd9cb] rounded-md w-full max-w-lg p-5 shadow-lg space-y-4">
+            <div className="flex items-center justify-between border-b border-[#ebe6da] pb-2">
+              <h3 className="text-base font-semibold text-[#183a30]">新用户演示引导（5 分钟体验业务闭环）</h3>
+              <button onClick={() => setShowGuideModal(false)} className="text-[#7c8781] hover:text-[#1a2420]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <ol className="list-decimal list-inside space-y-2 text-xs text-[#53605a] leading-relaxed">
+              <li><strong className="text-[#183a30]">切换示例企业</strong>：右上角可在「松间隐庐精品民宿」与「云溪古镇文旅景区」间切换，体验严格的企业数据隔离。</li>
+              <li><strong className="text-[#183a30]">市场情报与爆款拆解</strong>：进入「市场情报中心」查看来源追踪与去重，在「爆款分析中心」一键生成 11 维分析并保存为策略卡片。</li>
+              <li><strong className="text-[#183a30]">知识库混合检索</strong>：在「企业知识库」输入关键词（如 <code>私汤</code> / <code>三道茶</code>），体验已核实事实与[待核实]防幻觉提示。</li>
+              <li><strong className="text-[#183a30]">AI 图文创作与人工审核</strong>：在「AI 内容创作」生成多标题与 5 页图文分镜，在右侧大尺寸编辑器修改后保存草稿。</li>
+            </ol>
+            <div className="p-2.5 rounded bg-[#ebe6da] text-[11px] text-[#53605a]">
+              说明：在线 Demo 模式不依赖真实大模型 API Key，也不会修改正式企业数据库；您可随时点击顶部「重置演示」恢复初始状态。
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowGuideModal(false);
+                  onTabChange('creation');
+                }}
+                className="px-4 py-1.5 rounded bg-[#183a30] text-white text-xs font-medium"
+              >
+                立即前往「AI 内容创作」体验
+              </button>
+            </div>
           </div>
         </div>
       )}
