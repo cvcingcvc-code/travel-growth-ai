@@ -22,6 +22,10 @@ import {
 } from '@/lib/services/review.service';
 import { searchKnowledge } from '@/lib/services/knowledge.service';
 import { buildZipBuffer } from '@/lib/utils/zip';
+import { generateOrRejectRealImage } from '@/lib/providers/image';
+import { ProviderUnconfiguredError } from '@/lib/providers/types';
+import { listAssets } from '@/lib/services/asset.service';
+import { getReviewOverview } from '@/lib/services/review.service';
 
 describe('TravelGrowth AI 2.0 — 企业营销智能体端到端业务闭环验收', () => {
   beforeEach(() => {
@@ -134,5 +138,22 @@ describe('TravelGrowth AI 2.0 — 企业营销智能体端到端业务闭环验�
     // 验证知识库已能检索回流经验
     const kbHits = searchKnowledge(orgId, '复盘经验沉淀 标题表现', { category: 'E_EXPERIENCE' });
     expect(kbHits.length).toBeGreaterThan(0);
+  });
+
+  it('云杉溪谷全链路演示企业数据完整关联 + 未配置生图密钥时严禁伪造成功', async () => {
+    const assets = listAssets('org_demo_spruce');
+    expect(assets.length).toBeGreaterThanOrEqual(3);
+
+    const review = getReviewOverview('org_demo_spruce');
+    expect(review.publications.length).toBe(2);
+    expect(review.metrics.length).toBe(2);
+    expect(review.insights.length).toBe(1);
+
+    await expect(
+      generateOrRejectRealImage({
+        organizationId: 'org_demo_spruce',
+        prompt: '云杉溪谷森林木屋日落宣传海报',
+      })
+    ).rejects.toBeInstanceOf(ProviderUnconfiguredError);
   });
 });

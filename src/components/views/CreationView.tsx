@@ -65,6 +65,66 @@ export function CreationView({ orgId }: { orgId: string }) {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState('');
+  const [imgPrompt, setImgPrompt] = useState('');
+  const [imgRatio, setImgRatio] = useState<'3:4' | '1:1' | '16:9'>('3:4');
+  const [imgLoading, setImgLoading] = useState(false);
+  const [extImgUrl, setExtImgUrl] = useState('');
+
+  async function handleRealImageGen() {
+    if (!selectedProjectId) return;
+    setImgLoading(true);
+    setNotice('');
+    try {
+      const res = await fetch('/api/v1/images/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-organization-id': orgId },
+        body: JSON.stringify({
+          prompt: imgPrompt || editCover || editTitle,
+          aspectRatio: imgRatio,
+          projectId: selectedProjectId,
+          slidePage: 1,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setNotice(`真实生图完成 (${json.data.model})，已自动保存至素材库并挂载到第 1 页！`);
+        await loadAll();
+      } else {
+        setNotice(`${json.error?.message} — ${json.error?.guidance || ''}`);
+      }
+    } finally {
+      setImgLoading(false);
+    }
+  }
+
+  async function handleAttachExternalImage() {
+    if (!selectedProjectId || !extImgUrl.trim()) return;
+    setImgLoading(true);
+    try {
+      const res = await fetch('/api/v1/images/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-organization-id': orgId },
+        body: JSON.stringify({
+          action: 'attach_external',
+          title: `${editTitle.slice(0, 18)} · 封面图`,
+          imageUrl: extImgUrl.trim(),
+          projectId: selectedProjectId,
+          slidePage: 1,
+          isAiGenerated: true,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setExtImgUrl('');
+        setNotice('已将外部宣传图保存至素材库并关联到当前内容第 1 页！');
+        await loadAll();
+      } else {
+        setNotice(json.error?.message || '挂载失败');
+      }
+    } finally {
+      setImgLoading(false);
+    }
+  }
 
   async function loadAll() {
     const sequence = ++loadSequence.current;
@@ -517,6 +577,54 @@ export function CreationView({ orgId }: { orgId: string }) {
               </div>
 
               {hashtags.length > 0 && <div className="text-xs text-[#4c7364]">{hashtags.join(' ')}</div>}
+
+              {/* 真实文生图与外部图挂载面板（绝不伪造生图成功） */}
+              <div className="p-3.5 rounded-md bg-[#f8fafc] border border-[#e2e8f0] space-y-2.5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-semibold text-[#0f172a]">视觉与生图工作栏（文生图 API / 外部图上传挂载）</span>
+                  <select
+                    value={imgRatio}
+                    onChange={(e) => setImgRatio(e.target.value as '3:4' | '1:1' | '16:9')}
+                    className="px-2 py-1 rounded border border-[#e2e8f0] bg-white text-[11px]"
+                  >
+                    <option value="3:4">3:4 小红书竖版</option>
+                    <option value="1:1">1:1 方形海报</option>
+                    <option value="16:9">16:9 横版封面</option>
+                  </select>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={imgPrompt}
+                    onChange={(e) => setImgPrompt(e.target.value)}
+                    placeholder="输入生图提示词（留空则使用当前封面设计说明）"
+                    className="flex-1 px-2.5 py-1.5 rounded border border-[#e2e8f0] bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRealImageGen}
+                    disabled={imgLoading}
+                    className="px-3 py-1.5 rounded bg-[#1d4ed8] text-white font-medium shrink-0 disabled:opacity-60"
+                  >
+                    {imgLoading ? '请求中...' : '调用真实生图 API'}
+                  </button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={extImgUrl}
+                    onChange={(e) => setExtImgUrl(e.target.value)}
+                    placeholder="或粘贴外部已生成宣传图 URL（如 /demo-assets/spruce-cabin.jpg）挂载到 P1"
+                    className="flex-1 px-2.5 py-1.5 rounded border border-[#e2e8f0] bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAttachExternalImage}
+                    disabled={imgLoading || !extImgUrl.trim()}
+                    className="px-3 py-1.5 rounded bg-[#0f172a] text-white shrink-0 disabled:opacity-50"
+                  >
+                    挂载宣传图到 P1
+                  </button>
+                </div>
+              </div>
 
               {/* 多页图文创作方案 */}
               {carousel.length > 0 && (
