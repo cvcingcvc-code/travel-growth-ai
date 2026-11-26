@@ -1,5 +1,6 @@
 import { getDb } from '../db/client';
 import { newId, requireOrgAccess, writeAuditLog } from '../db/tenant';
+import { generateTextWithRegistry } from '../providers/registry';
 import { getCompanyProfile } from './organization.service';
 import { searchKnowledge } from './knowledge.service';
 import { listContentCases } from './analysis.service';
@@ -165,9 +166,13 @@ export function logAgentStep(params: {
 }
 
 /**
- * 真实执行一次 Orchestrator 端到端诊断与策划编排，每一步调用真实内部服务并落盘执行日志
+ * 真实执行一次 Orchestrator 端到端诊断与策划编排，每一步调用真实内部服务与真实文本模型（如 DeepSeek）并落盘执行日志
  */
-export function runOrchestratorDiagnostic(organizationId: string, objective: string) {
+export async function runOrchestratorDiagnostic(
+  organizationId: string,
+  objective: string,
+  options?: { skipLlmForSeed?: boolean }
+) {
   requireOrgAccess(organizationId);
   ensureOrganizationAgent(organizationId);
   const runId = newId('run');
@@ -176,7 +181,8 @@ export function runOrchestratorDiagnostic(organizationId: string, objective: str
   // Step 1: 总控 Agent 读取企业与产品档案
   const t1 = Date.now();
   const profile = getCompanyProfile(organizationId);
-  const products = profile.products as Array<{ name: string; verification_status: string }>;
+  const orgName = String((profile.organization as { name: string }).name);
+  const products = profile.products as Array<{ name: string; summary?: string; price_info?: string; verification_status: string }>;
   logAgentStep({
     organizationId,
     runId,
@@ -184,14 +190,14 @@ export function runOrchestratorDiagnostic(organizationId: string, objective: str
     roleName: '总控 Agent',
     toolName: 'get_company_profile',
     inputSummary: `拆解目标：${cleanObjective}`,
-    outputSummary: `已加载企业档案与 ${products.length} 个产品（其中已核实 ${products.filter((p) => p.verification_status === 'verified').length} 个）`,
+    outputSummary: `已加载「${orgName}」企业档案与 ${products.length} 个产品（其中已核实 ${products.filter((p) => p.verification_status === 'verified').length} 个）`,
     status: 'completed',
     durationMs: Math.max(1, Date.now() - t1),
   });
 
   // Step 2: 市场调研 & 爆款分析 Agent 检索已有对标案例
   const t2 = Date.now();
-  const cases = listContentCases(organizationId);
+  const cases = listContentCases(organizationId) as Array<{ title: string; latestAnalysis?: unknown }>;
   logAgentStep({
     organizationId,
     runId,
@@ -238,6 +244,56 @@ export function runOrchestratorDiagnostic(organizationId: string, objective: str
     durationMs: Math.max(1, Date.now() - t4),
   });
 
+  // Step 5: 调用真实文本模型（如 DeepSeek）综合企业知识、产品与案例生成行动建议
+  let aiSummary: { dataOrigin: string; provider: string; modelName: string; content: string; totalTokens?: number } | null = null;
+  if (!options?.skipLlmForSeed) {
+    const t5 = Date.now();
+    try {
+      const llmRes = await generateTextWithRegistry({
+        organizationId,
+        taskType: 'agent_orchestrator_plan',
+        systemPrompt:
+          '你是企业专属营销总控 Agent。请严格结合提供的企业产品、知识库切片和同行案例，输出 3 条具体、可执行的下周营销行动建议（每条不超过60字）。严禁编造未提供的价格或事实。',
+        userPrompt: `企业：${orgName}\n任务目标：${cleanObjective}\n产品列表：${products.map((p) => `${p.name}(${p.price_info || '待核实'})`).join('；') || '暂无'}\n知识库命中：${hits.map((h) => `[${h.category}] ${h.title}: ${h.snippet.slice(0, 100)}`).join('\n') || '暂无'}\n对标案例：${cases.map((c) => c.title).join('；') || '暂无'}`,
+        testModeFallback: () =>
+          `【测试模式】基于「${orgName}」当前 ${products.length} 个产品与 ${hits.length} 条知识切片，建议：1) 围绕主打产品发布行前核对清单图文；2) 补齐 ${unverifiedProducts} 个待核实产品的价格与开放时间；3) 复用已有对标案例结构进行首周收藏率测试。`,
+      });
+      aiSummary = {
+        dataOrigin: llmRes.dataOrigin,
+        provider: llmRes.provider,
+        modelName: llmRes.modelName,
+        content: llmRes.content,
+        totalTokens: llmRes.usage?.totalTokens,
+      };
+      logAgentStep({
+        organizationId,
+        runId,
+        stepIndex: 5,
+        roleName: '总控 Agent (LLM 推理)',
+        toolName: `${llmRes.provider}/${llmRes.modelName}`,
+        inputSummary: `综合 ${products.length} 个产品、${hits.length} 条知识与 ${cases.length} 条案例`,
+        outputSummary: `[${llmRes.dataOrigin}${llmRes.usage?.totalTokens ? ` · ${llmRes.usage.totalTokens} tokens` : ''}] ${llmRes.content.slice(0, 320)}`,
+        status: 'completed',
+        durationMs: Math.max(1, Date.now() - t5),
+      });
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : '模型调用失败';
+      logAgentStep({
+        organizationId,
+        runId,
+        stepIndex: 5,
+        roleName: '总控 Agent (LLM 推理)',
+        toolName: 'generateTextWithRegistry',
+        inputSummary: `综合企业知识库执行大模型推理`,
+        outputSummary: '真实模型推理未完成',
+        status: 'failed',
+        errorMessage: errMsg,
+        durationMs: Math.max(1, Date.now() - t5),
+      });
+      throw err;
+    }
+  }
+
   writeAuditLog({
     organizationId,
     actorType: 'agent',
@@ -245,8 +301,8 @@ export function runOrchestratorDiagnostic(organizationId: string, objective: str
     action: 'agent.orchestrator_run',
     targetType: 'workflow_run',
     targetId: runId,
-    detail: { objective: cleanObjective, steps: 4 },
+    detail: { objective: cleanObjective, steps: options?.skipLlmForSeed ? 4 : 5, dataOrigin: aiSummary?.dataOrigin ?? 'seed' },
   });
 
-  return { runId, ...getAgentWorkspaceState(organizationId) };
+  return { runId, aiSummary, ...getAgentWorkspaceState(organizationId) };
 }

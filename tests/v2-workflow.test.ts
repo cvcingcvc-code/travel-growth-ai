@@ -62,7 +62,7 @@ describe('TravelGrowth AI 2.0 — 企业营销智能体端到端业务闭环验�
     expect(orgId).toMatch(/^org_/);
 
     // 2. 自动生成专属营销 Agent 并执行真实总控编排
-    const diag = runOrchestratorDiagnostic(orgId, '制定青岚谷首周小红书增长计划');
+    const diag = await runOrchestratorDiagnostic(orgId, '制定青岚谷首周小红书增长计划');
     expect(diag.steps.length).toBeGreaterThanOrEqual(4);
     const agentState = getAgentWorkspaceState(orgId);
     expect((agentState.agent as { agent_name: string }).agent_name).toContain('青岚谷文旅');

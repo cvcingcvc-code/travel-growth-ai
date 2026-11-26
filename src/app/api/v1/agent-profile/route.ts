@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     ensureBootstrapped();
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const orgId = getOrgIdFromRequest(req, body.organizationId as string | undefined);
-    const result = runOrchestratorDiagnostic(orgId, String(body.objective ?? ''));
+    const result = await runOrchestratorDiagnostic(orgId, String(body.objective ?? ''));
     return ok(result, 201);
   } catch (err) {
     return handleApiError(err);

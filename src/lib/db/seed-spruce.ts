@@ -171,9 +171,9 @@ export function seedSpruceValleyDemo() {
     conversionCta: '评论区留言出行周末，获取官方实时房态与手作营名额核实',
   });
 
-  // 6. 自动创建专属 Agent 并执行真实 4 步总控诊断
+  // 6. 自动创建专属 Agent 并执行初始 4 步结构化诊断（种子阶段不触发外部付费 LLM）
   ensureOrganizationAgent(orgId);
-  runOrchestratorDiagnostic(orgId, '结合云杉溪谷木屋、亲子手作与溪畔咖啡打造首周小红书引流方案');
+  void runOrchestratorDiagnostic(orgId, '结合云杉溪谷木屋、亲子手作与溪畔咖啡打造首周小红书引流方案', { skipLlmForSeed: true });
 
   // 7. 已审批的 7天/30天完整营销方案
   db.prepare(

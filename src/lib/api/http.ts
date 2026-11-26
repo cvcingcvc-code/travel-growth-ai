@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TenantAccessError } from '../db/tenant';
 import { ProviderUnconfiguredError } from '../providers/types';
+import { AIRateLimitError } from '../providers/guard';
 import { seedDatabaseIfEmpty } from '../db/seed';
 
 export function ensureBootstrapped() {
@@ -21,6 +22,19 @@ export function handleApiError(err: unknown) {
   if (err instanceof TenantAccessError) {
     return NextResponse.json(
       { ok: false, error: { code: err.code, message: err.message } },
+      { status: err.statusCode }
+    );
+  }
+  if (err instanceof AIRateLimitError) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: {
+          code: err.code,
+          message: err.message,
+          guidance: err.guidance,
+        },
+      },
       { status: err.statusCode }
     );
   }
