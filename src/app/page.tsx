@@ -212,7 +212,7 @@ export default function HomePage() {
         ) : activeTab === 'knowledge' ? (
           <KnowledgeView orgId={activeOrgId} focusedDocId={focusedItemId} onNavigate={navigate} />
         ) : activeTab === 'products' ? (
-          <AssetsView orgId={activeOrgId} />
+          <AssetsView orgId={activeOrgId} onNavigate={navigate} />
         ) : activeTab === 'agent' ? (
           <AgentView orgId={activeOrgId} />
         ) : activeTab === 'intelligence' ? (

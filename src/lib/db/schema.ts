@@ -177,11 +177,14 @@ CREATE TABLE IF NOT EXISTS assets (
   id TEXT PRIMARY KEY,
   organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
-  category TEXT NOT NULL DEFAULT 'real_scenic', -- real_scenic | brand_material | product_photo | poster | document | ai_concept
+  category TEXT NOT NULL DEFAULT 'real_scenic', -- real_scenic | brand_material | product_photo | poster | document | ai_concept | reference_material
   file_url TEXT NOT NULL DEFAULT '',
   mime_type TEXT NOT NULL DEFAULT 'image/jpeg',
   source_origin TEXT NOT NULL DEFAULT '',
-  copyright_status TEXT NOT NULL DEFAULT 'owned', -- owned | licensed | pending_verification | ai_generated_concept
+  copyright_status TEXT NOT NULL DEFAULT 'owned', -- owned | licensed | pending_verification | ai_generated_concept | reference_only
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+  is_favorite INTEGER NOT NULL DEFAULT 0,
   is_ai_generated INTEGER NOT NULL DEFAULT 0,
   is_demo INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))

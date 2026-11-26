@@ -36,6 +36,19 @@ export function getDb(): DatabaseSync {
   dbInstance = new DatabaseSync(targetPath);
   currentDbPath = targetPath;
   dbInstance.exec(SCHEMA_SQL);
+
+  // 安全增量迁移：兼容旧本地 SQLite 数据库的 assets 新增字段
+  const assetCols = (dbInstance.prepare('PRAGMA table_info(assets)').all() as Array<{ name: string }>).map((c) => c.name);
+  if (!assetCols.includes('tags_json')) {
+    dbInstance.exec("ALTER TABLE assets ADD COLUMN tags_json TEXT NOT NULL DEFAULT '[]';");
+  }
+  if (!assetCols.includes('product_id')) {
+    dbInstance.exec('ALTER TABLE assets ADD COLUMN product_id TEXT;');
+  }
+  if (!assetCols.includes('is_favorite')) {
+    dbInstance.exec('ALTER TABLE assets ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;');
+  }
+
   return dbInstance;
 }
 

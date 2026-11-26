@@ -122,11 +122,36 @@ export function seedSpruceValleyDemo() {
     isDemo: true,
   });
 
-  // 4. 3 张真实 AI 生成的高质量宣传图入库
+  // 4. 导入 6 张文旅参考素材（明确标记为「参考素材」，严禁冒充企业实拍）+ 3 张 AI 概念宣传图
+  const refAssets = [
+    { title: '山间木屋', url: '/demo-assets/ref/assets/01-forest-cabin.jpg', tags: ['住宿', '自然风光'], productId: 'prod_sp_cabin', fav: true },
+    { title: '自然手作体验', url: '/demo-assets/ref/assets/02-nature-workshop.jpg', tags: ['亲子', '户外活动'], productId: 'prod_sp_craft', fav: true },
+    { title: '溪畔咖啡', url: '/demo-assets/ref/assets/03-riverside-coffee.jpg', tags: ['餐饮', '生活方式'], productId: 'prod_sp_coffee', fav: false },
+    { title: '景区宣传素材', url: '/demo-assets/ref/assets/04-scenic-village.jpg', tags: ['景区', '山水风光'], productId: 'prod_sp_cabin', fav: false },
+    { title: '文创产品展示', url: '/demo-assets/ref/assets/05-cultural-gift.jpg', tags: ['文创', '礼盒包装'], productId: 'prod_sp_craft', fav: false },
+    { title: '营地宣传海报素材', url: '/demo-assets/ref/assets/06-glamping.jpg', tags: ['营地', '夜景氛围'], productId: 'prod_sp_cabin', fav: false },
+  ];
+  for (const r of refAssets) {
+    createAsset({
+      organizationId: orgId,
+      title: r.title,
+      category: 'reference_material',
+      fileUrl: r.url,
+      mimeType: 'image/jpeg',
+      sourceOrigin: '参考素材（非企业实拍）',
+      copyrightStatus: 'reference_only',
+      tags: r.tags,
+      productId: r.productId,
+      isFavorite: r.fav,
+      isAiGenerated: false,
+      isDemo: true,
+    });
+  }
+
   const imgs = [
-    { title: '临溪云杉木屋日落概念宣传图（AI生成）', url: '/demo-assets/spruce-cabin.jpg' },
-    { title: '亲子自然植物拓印手作营概念图（AI生成）', url: '/demo-assets/spruce-craft.jpg' },
-    { title: '溪畔秋日手冲咖啡特写概念图（AI生成）', url: '/demo-assets/spruce-coffee.jpg' },
+    { title: '临溪云杉木屋日落概念宣传图', url: '/demo-assets/spruce-cabin.jpg', tags: ['住宿', '日落氛围'], productId: 'prod_sp_cabin' },
+    { title: '亲子自然植物拓印手作营概念图', url: '/demo-assets/spruce-craft.jpg', tags: ['亲子', '手作体验'], productId: 'prod_sp_craft' },
+    { title: '溪畔秋日手冲咖啡特写概念图', url: '/demo-assets/spruce-coffee.jpg', tags: ['餐饮', '手冲咖啡'], productId: 'prod_sp_coffee' },
   ];
   for (const img of imgs) {
     createAsset({
@@ -135,9 +160,12 @@ export function seedSpruceValleyDemo() {
       category: 'ai_concept',
       fileUrl: img.url,
       mimeType: 'image/jpeg',
-      sourceOrigin: 'Antigravity AI 生图引擎真实生成（创意概念图）',
+      sourceOrigin: 'AI 概念图',
       copyrightStatus: 'ai_generated_concept',
+      tags: img.tags,
+      productId: img.productId,
       isAiGenerated: true,
+      isDemo: true,
     });
   }
 
