@@ -35,3 +35,37 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* 首页沉浸式文旅封面：轻微电影感镜头缓慢推进 */
+@keyframes hero-ken-burns {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: scale(1.065) translate3d(0, -0.5%, 0);
+  }
+}
+
+.hero-slide-zoom {
+  animation: hero-ken-burns 8s ease-out forwards;
+  will-change: transform;
+}
+
+.hero-slide-zoom-paused {
+  animation-play-state: paused;
+}
+
+.hero-text-shadow {
+  text-shadow: 0 2px 20px rgba(15, 23, 42, 0.42), 0 1px 4px rgba(15, 23, 42, 0.35);
+}
+
+.hero-subtext-shadow {
+  text-shadow: 0 1px 12px rgba(15, 23, 42, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide-zoom {
+    animation: none !important;
+    transform: scale(1) !important;
+  }
+}

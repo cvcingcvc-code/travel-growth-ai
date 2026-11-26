@@ -13,6 +13,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
+      <head>
+        <link
+          rel="preload"
+          as="image"
+          href="/images/hero/hero-01-waterfront-park.webp"
+          type="image/webp"
+        />
+      </head>
       <body className="min-h-screen bg-[#f8fafc] text-[#0f172a] antialiased">
         {children}
       </body>
