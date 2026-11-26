@@ -96,12 +96,32 @@ const FLOW_ORDER: NavTab[] = [
   'review',
 ];
 
+const GROUP_DEFAULT_TAB: Record<string, NavTab> = {
+  企业管理: 'profile',
+  智能营销: 'agent',
+  内容运营: 'creation',
+  系统管理: 'settings',
+};
+
 function findMeta(tab: NavTab) {
   for (const g of NAV_GROUPS) {
     const found = g.items.find((i) => i.id === tab);
-    if (found) return { group: g.group, label: found.label };
+    if (found) {
+      return {
+        group: g.group,
+        groupTab: GROUP_DEFAULT_TAB[g.group] || 'today',
+        label: found.label,
+      };
+    }
   }
-  return { group: '工作台', label: '首页' };
+  return { group: '企业管理', groupTab: 'profile' as NavTab, label: '体验首页' };
+}
+
+function buildRouteHref(tab: NavTab, orgId: string) {
+  const sp = new URLSearchParams();
+  if (tab !== 'landing') sp.set('view', tab);
+  if (orgId) sp.set('org', orgId);
+  return sp.toString() ? `/?${sp.toString()}` : '/';
 }
 
 export function AppShell({
@@ -397,19 +417,63 @@ export function AppShell({
             </div>
           </div>
 
-          {/* 统一顶部面包屑栏 */}
-          <div className="px-4 lg:px-6 py-1.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex items-center justify-between text-[11px] text-[#64748b]">
-            <div className="flex items-center gap-1.5">
-              <button onClick={() => onTabChange('landing')} className="hover:text-[#1d4ed8]">体验首页</button>
-              <ChevronRight className="w-3 h-3" />
-              <span>{meta.group}</span>
-              <ChevronRight className="w-3 h-3" />
-              <span className="font-medium text-[#0f172a]">{meta.label}</span>
-            </div>
-            <div className="hidden sm:block text-[11px] text-[#94a3b8]">
+          {/* 统一顶部面包屑栏（全层级绑定真实路由、支持悬停高亮与保留企业 ID） */}
+          <nav aria-label="面包屑导航" className="px-4 lg:px-6 py-1.5 bg-[#f8fafc] border-t border-[#e2e8f0] flex items-center justify-between text-[11px] text-[#64748b]">
+            <ol className="flex items-center gap-1 flex-wrap">
+              <li>
+                <a
+                  href={buildRouteHref('landing', activeOrgId)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onTabChange('landing');
+                  }}
+                  className="cursor-pointer px-1.5 py-0.5 rounded hover:bg-[#eff6ff] hover:text-[#1d4ed8] transition-colors inline-block"
+                >
+                  体验首页
+                </a>
+              </li>
+              <li aria-hidden="true"><ChevronRight className="w-3 h-3 text-[#94a3b8]" /></li>
+              <li>
+                <a
+                  href={buildRouteHref(meta.groupTab, activeOrgId)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onTabChange(meta.groupTab);
+                  }}
+                  className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors inline-block ${
+                    activeTab === meta.groupTab
+                      ? 'bg-[#eff6ff] text-[#1d4ed8] font-semibold'
+                      : 'hover:bg-[#eff6ff] hover:text-[#1d4ed8]'
+                  }`}
+                >
+                  {meta.group}
+                </a>
+              </li>
+              {activeTab !== meta.groupTab && (
+                <>
+                  <li aria-hidden="true"><ChevronRight className="w-3 h-3 text-[#94a3b8]" /></li>
+                  <li>
+                    <span
+                      aria-current="page"
+                      className="px-1.5 py-0.5 rounded bg-[#eff6ff] text-[#1d4ed8] font-semibold inline-block"
+                    >
+                      {meta.label}
+                    </span>
+                  </li>
+                </>
+              )}
+            </ol>
+            <a
+              href={buildRouteHref('agent', activeOrgId)}
+              onClick={(e) => {
+                e.preventDefault();
+                onTabChange('agent');
+              }}
+              className="hidden sm:inline-block text-[11px] text-[#64748b] hover:text-[#1d4ed8] cursor-pointer"
+            >
               Agent 历史记录：{realAgentStatus?.stepCount ?? 0} 步
-            </div>
-          </div>
+            </a>
+          </nav>
         </header>
 
         {/* 移动端导航抽屉 */}

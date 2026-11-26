@@ -40,10 +40,10 @@ export function CompanyProfileView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-[#0f172a] flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-[#1d4ed8]" /> 企业档案与品牌规范
+            <Building2 className="w-5 h-5 text-[#1d4ed8]" /> 企业管理总览与品牌档案
           </h1>
           <p className="text-xs text-[#64748b] mt-0.5">
-            所有知识检索、专属 Agent 与内容生产均以本页企业事实与宣传红线为依据。
+            统一管理当前企业基础信息、品牌定位、知识库与产品素材；所有 AI 推理均以此页事实为准。
           </p>
         </div>
         <div className="flex gap-2">
@@ -61,6 +61,25 @@ export function CompanyProfileView({
             进入企业知识库 <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
+      </div>
+
+      {/* 企业管理子模块快捷导航 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+        {[
+          { label: '今日工作台', desc: '查看待办任务与成果', tab: 'today' as NavTab },
+          { label: '企业知识库', desc: '图谱可视化与混合检索', tab: 'knowledge' as NavTab },
+          { label: '产品与素材', desc: `已登记 ${profile.products.length} 个产品`, tab: 'products' as NavTab },
+          { label: '专属 Agent', desc: '查看编排配置与日志', tab: 'agent' as NavTab },
+        ].map((card) => (
+          <button
+            key={card.tab}
+            onClick={() => onNavigate(card.tab)}
+            className="p-3 rounded-lg bg-white border border-[#e2e8f0] hover:border-[#2563eb] hover:bg-[#eff6ff]/40 text-left transition-colors cursor-pointer"
+          >
+            <div className="font-semibold text-[#0f172a]">{card.label}</div>
+            <div className="text-[11px] text-[#64748b] mt-0.5">{card.desc}</div>
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 text-xs">
