@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Cpu, Play, ShieldAlert } from 'lucide-react';
@@ -81,21 +81,21 @@ export function ModelsView({ orgId }: { orgId: string }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-[#183a30]">统一模型配置中心</h1>
-          <p className="text-xs text-[#53605a] mt-0.5">
+          <h1 className="text-xl font-semibold text-[#1d4ed8]">统一模型配置中心</h1>
+          <p className="text-xs text-[#475569] mt-0.5">
             支持 OpenAI、Gemini、Claude、DeepSeek、Ollama 及兼容接口；密钥仅从环境变量读取，严禁明文入库。
           </p>
         </div>
         <button
           onClick={handleTestConnection}
-          className="px-3.5 py-2 rounded bg-[#183a30] text-white text-xs font-medium inline-flex items-center gap-1.5"
+          className="px-3.5 py-2 rounded bg-[#1d4ed8] text-white text-xs font-medium inline-flex items-center gap-1.5"
         >
           <Play className="w-3.5 h-3.5" /> 测试文本模型连通性
         </button>
       </div>
 
       {testResult && (
-        <div className="p-3 rounded bg-[#ebe6da] border border-[#d8cfb8] text-xs text-[#183a30] flex items-center gap-2">
+        <div className="p-3 rounded bg-[#f1f5f9] border border-[#cbd5e1] text-xs text-[#1d4ed8] flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 shrink-0" />
           <span>{testResult}</span>
         </div>
@@ -103,19 +103,19 @@ export function ModelsView({ orgId }: { orgId: string }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {providers.map((p) => (
-          <div key={p.capability} className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
+          <div key={p.capability} className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-semibold text-sm text-[#183a30]">
-                <Cpu className="w-4 h-4 text-[#4c7364]" />
+              <div className="flex items-center gap-2 font-semibold text-sm text-[#1d4ed8]">
+                <Cpu className="w-4 h-4 text-[#2563eb]" />
                 <span>能力类型：{p.capability.toUpperCase()}</span>
               </div>
               <span
                 className={`px-2 py-0.5 rounded text-[11px] ${
                   p.status === 'connected'
-                    ? 'bg-[#e3ede8] text-[#183a30]'
+                    ? 'bg-[#eff6ff] text-[#1d4ed8]'
                     : p.status === 'test_mode_ready'
-                    ? 'bg-[#ebe6da] text-[#8a6534]'
-                    : 'bg-[#f4e5e1] text-[#b05b43]'
+                    ? 'bg-[#f1f5f9] text-[#b45309]'
+                    : 'bg-[#fef2f2] text-[#dc2626]'
                 }`}
               >
                 {p.status === 'connected' ? '真实密钥已就绪' : p.status === 'test_mode_ready' ? '测试模式' : '未配置'}
@@ -126,7 +126,7 @@ export function ModelsView({ orgId }: { orgId: string }) {
               <select
                 value={p.provider}
                 onChange={(e) => handleSaveProvider(p, { provider: e.target.value })}
-                className="px-2.5 py-1.5 rounded border border-[#dfd9cb] bg-white"
+                className="px-2.5 py-1.5 rounded border border-[#e2e8f0] bg-white"
               >
                 <option value="openai">OpenAI</option>
                 <option value="gemini">Google Gemini</option>
@@ -146,7 +146,7 @@ export function ModelsView({ orgId }: { orgId: string }) {
                   )
                 }
                 placeholder="模型名称"
-                className="px-2.5 py-1.5 rounded border border-[#dfd9cb] bg-white"
+                className="px-2.5 py-1.5 rounded border border-[#e2e8f0] bg-white"
               />
             </div>
 
@@ -159,10 +159,10 @@ export function ModelsView({ orgId }: { orgId: string }) {
                 )
               }
               placeholder="自定义 Base URL（可选，如 http://localhost:11434；非本机地址须配置鉴权）"
-              className="w-full px-2.5 py-1.5 text-xs rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-2.5 py-1.5 text-xs rounded border border-[#e2e8f0] bg-white"
             />
 
-            <div className="flex items-center justify-between text-[11px] text-[#53605a]">
+            <div className="flex items-center justify-between text-[11px] text-[#475569]">
               <span>{p.statusNote}</span>
               <label className="flex items-center gap-1.5 shrink-0">
                 <input
@@ -178,15 +178,15 @@ export function ModelsView({ orgId }: { orgId: string }) {
       </div>
 
       {/* 调用记录 */}
-      <div className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-[#183a30]">近期模型调用审计日志 (model_runs)</h2>
+      <div className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-[#1d4ed8]">近期模型调用审计日志 (model_runs)</h2>
         {runs.length === 0 ? (
-          <div className="text-xs text-[#7c8781] py-4 text-center">暂无模型调用记录。</div>
+          <div className="text-xs text-[#64748b] py-4 text-center">暂无模型调用记录。</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-[#ebe6da] text-[#7c8781]">
+                <tr className="border-b border-[#f1f5f9] text-[#64748b]">
                   <th className="py-2 pr-3">任务类型</th>
                   <th className="py-2 pr-3">供应商 / 模型</th>
                   <th className="py-2 pr-3">状态</th>
@@ -203,7 +203,7 @@ export function ModelsView({ orgId }: { orgId: string }) {
                     <td className="py-2 pr-3">{r.status}</td>
                     <td className="py-2 pr-3">{r.duration_ms} ms</td>
                     <td className="py-2 pr-3">{r.total_tokens ?? '-'}</td>
-                    <td className="py-2 text-[#7c8781]">{r.created_at}</td>
+                    <td className="py-2 text-[#64748b]">{r.created_at}</td>
                   </tr>
                 ))}
               </tbody>

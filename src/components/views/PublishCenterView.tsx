@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Check, CheckCircle2, Copy, Download, FileArchive, FileText, Send, ShieldAlert } from 'lucide-react';
+import { BookOpen, Check, CheckCircle2, Copy, Download, FileArchive, FileText, PenTool, Send, ShieldAlert, Smartphone, Target } from 'lucide-react';
+import type { NavTab } from '../AppShell';
 
 interface ContentVersion {
   id: string;
@@ -23,10 +24,18 @@ interface ContentProject {
   publications: Array<{ id: string; platform: string; published_url: string; published_at: string }>;
 }
 
-export function PublishCenterView({ orgId }: { orgId: string }) {
+export function PublishCenterView({
+  orgId,
+  onNavigate,
+}: {
+  orgId: string;
+  onNavigate?: (tab: NavTab) => void;
+}) {
   const [projects, setProjects] = useState<ContentProject[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [publishUrlMap, setPublishUrlMap] = useState<Record<string, string>>({});
+  const [previewProjectId, setPreviewProjectId] = useState<string | null>(null);
+  const [previewSlideIdx, setPreviewSlideIdx] = useState(0);
   const [notice, setNotice] = useState('');
 
   async function loadProjects() {
@@ -165,6 +174,9 @@ export function PublishCenterView({ orgId }: { orgId: string }) {
                     <div className="text-[#64748b] mt-1">营销目的：{p.marketing_goal} · 当前版本 v{v.version_number}</div>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <button onClick={() => { setPreviewProjectId(p.id); setPreviewSlideIdx(0); }} className="px-2.5 py-1.5 rounded border border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8] font-medium inline-flex items-center gap-1">
+                      <Smartphone className="w-3.5 h-3.5" /> 手机图文预览
+                    </button>
                     <button onClick={() => handleCopyAll(p)} className="px-2.5 py-1.5 rounded border border-[#e2e8f0] hover:bg-[#f8fafc] inline-flex items-center gap-1">
                       {copiedId === p.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedId === p.id ? '已复制' : '一键复制文案'}
@@ -210,6 +222,16 @@ export function PublishCenterView({ orgId }: { orgId: string }) {
                   </div>
                 </div>
 
+                <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#64748b]">
+                  {onNavigate && (
+                    <>
+                      <button onClick={() => onNavigate('campaigns')} className="inline-flex items-center gap-1 text-[#1d4ed8] hover:underline"><Target className="w-3 h-3" /> 返回关联营销方案</button>
+                      <button onClick={() => onNavigate('knowledge')} className="inline-flex items-center gap-1 text-[#1d4ed8] hover:underline"><BookOpen className="w-3 h-3" /> 查看引用知识库</button>
+                      <button onClick={() => onNavigate('creation')} className="inline-flex items-center gap-1 text-[#1d4ed8] hover:underline"><PenTool className="w-3 h-3" /> 重新编辑正文</button>
+                    </>
+                  )}
+                </div>
+
                 {/* 人工标记已发布 */}
                 <div className="pt-3 border-t border-[#e2e8f0] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <input
@@ -236,6 +258,58 @@ export function PublishCenterView({ orgId }: { orgId: string }) {
           })}
         </div>
       )}
+
+      {/* 接近真实社交媒体的手机图文预览弹窗 */}
+      {previewProjectId && (() => {
+        const p = projects.find((x) => x.id === previewProjectId);
+        const v = p?.versions[0];
+        if (!p || !v) return null;
+        const slides: Array<{ page: number; title: string; visual: string; copy: string; imageUrl?: string }> = JSON.parse(v.carousel_plan_json || '[]');
+        const tags: string[] = JSON.parse(v.hashtags_json || '[]');
+        const curSlide = slides[previewSlideIdx] || slides[0];
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-900/55 flex items-center justify-center p-4" onClick={() => setPreviewProjectId(null)}>
+            <div className="bg-white rounded-[28px] border-4 border-slate-800 w-full max-w-[360px] max-h-[86vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-[#e2e8f0] px-4 py-2.5 flex items-center justify-between text-xs z-10">
+                <span className="font-semibold text-[#0f172a]">{p.target_platform} 手机预览</span>
+                <button onClick={() => setPreviewProjectId(null)} className="text-[#64748b] hover:text-[#0f172a]">关闭</button>
+              </div>
+              <div className="aspect-[3/4] bg-[#f1f5f9] relative overflow-hidden flex items-center justify-center">
+                {curSlide?.imageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={curSlide.imageUrl} alt={curSlide.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="p-6 text-center space-y-2">
+                    <div className="text-xs font-semibold text-[#1d4ed8]">PAGE {curSlide?.page ?? 1}</div>
+                    <div className="text-base font-semibold text-[#0f172a]">{curSlide?.title || v.selected_title}</div>
+                    <div className="text-xs text-[#475569]">{curSlide?.copy}</div>
+                  </div>
+                )}
+                {slides.length > 1 && (
+                  <div className="absolute bottom-2.5 inset-x-0 flex justify-center gap-1.5">
+                    {slides.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setPreviewSlideIdx(idx)}
+                        className={`w-2 h-2 rounded-full ${idx === previewSlideIdx ? 'bg-[#1d4ed8]' : 'bg-white/80'}`}
+                        aria-label={`切换到第 ${idx + 1} 页`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="p-4 space-y-2.5 text-xs">
+                <div className="font-semibold text-sm text-[#0f172a] leading-snug">{v.selected_title}</div>
+                <div className="text-[#334155] whitespace-pre-wrap leading-relaxed">{v.body_copy}</div>
+                {tags.length > 0 && <div className="text-[#1d4ed8]">{tags.join(' ')}</div>}
+                <div className="p-2 rounded bg-[#f8fafc] border border-[#e2e8f0] text-[11px] text-[#64748b]">
+                  CTA：{v.conversion_cta}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Package, Image as ImageIcon, ShieldCheck, AlertTriangle } from 'lucide-react';
@@ -114,73 +114,73 @@ export function AssetsView({ orgId }: { orgId: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-[#183a30]">企业产品与素材管理中心</h1>
-        <p className="text-xs text-[#53605a] mt-0.5">
+        <h1 className="text-xl font-semibold text-[#1d4ed8]">企业产品与素材管理中心</h1>
+        <p className="text-xs text-[#475569] mt-0.5">
           统一管理当前企业的文旅产品事实与版权素材；AI 概念图严禁标记为真实景区实景照片。
         </p>
       </div>
 
-      {notice && <div className="p-3 rounded bg-[#ebe6da] text-xs text-[#183a30]">{notice}</div>}
+      {notice && <div className="p-3 rounded bg-[#f1f5f9] text-xs text-[#1d4ed8]">{notice}</div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 产品录入与列表 */}
         <div className="space-y-4">
-          <form onSubmit={handleCreateProduct} className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-[#183a30] flex items-center gap-1.5">
-              <Package className="w-4 h-4 text-[#4c7364]" /> 录入文旅产品 / 服务
+          <form onSubmit={handleCreateProduct} className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-[#1d4ed8] flex items-center gap-1.5">
+              <Package className="w-4 h-4 text-[#2563eb]" /> 录入文旅产品 / 服务
             </h2>
             <input
               required
               value={pName}
               onChange={(e) => setPName(e.target.value)}
               placeholder="产品名称（如：云海观景套房 / 古镇夜游联票）*"
-              className="w-full px-3 py-2 text-sm rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-3 py-2 text-sm rounded border border-[#e2e8f0] bg-white"
             />
             <textarea
               rows={2}
               value={pSummary}
               onChange={(e) => setPSummary(e.target.value)}
               placeholder="核心卖点与体验说明..."
-              className="w-full px-3 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-3 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
             />
             <div className="grid grid-cols-2 gap-2">
               <input
                 value={pPrice}
                 onChange={(e) => setPPrice(e.target.value)}
                 placeholder="价格说明（未确认留空）"
-                className="px-3 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                className="px-3 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
               />
               <input
                 value={pAddress}
                 onChange={(e) => setPAddress(e.target.value)}
                 placeholder="地址/集合点"
-                className="px-3 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                className="px-3 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
               />
             </div>
-            <label className="flex items-center gap-2 text-xs text-[#53605a]">
+            <label className="flex items-center gap-2 text-xs text-[#475569]">
               <input type="checkbox" checked={pVerified} onChange={(e) => setPVerified(e.target.checked)} />
               <span>已核实价格、地址与营业时间</span>
             </label>
-            <button type="submit" className="w-full py-2 rounded bg-[#183a30] text-white text-sm font-medium">
+            <button type="submit" className="w-full py-2 rounded bg-[#1d4ed8] text-white text-sm font-medium">
               保存产品
             </button>
           </form>
 
-          <div className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-2.5">
-            <h3 className="text-sm font-semibold text-[#183a30]">企业产品列表 ({products.length})</h3>
+          <div className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-2.5">
+            <h3 className="text-sm font-semibold text-[#1d4ed8]">企业产品列表 ({products.length})</h3>
             {products.length === 0 ? (
-              <div className="text-xs text-[#7c8781] py-4 text-center">暂无产品，请在上方录入。</div>
+              <div className="text-xs text-[#64748b] py-4 text-center">暂无产品，请在上方录入。</div>
             ) : (
               products.map((p) => (
-                <div key={p.id} className="p-3 rounded bg-[#f5f2eb] border border-[#e5dfd2] text-xs space-y-1">
+                <div key={p.id} className="p-3 rounded bg-[#f8fafc] border border-[#e2e8f0] text-xs space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[#1a2420]">{p.name}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${p.verification_status === 'verified' ? 'bg-[#e3ede8] text-[#183a30]' : 'bg-[#f4e5e1] text-[#b05b43]'}`}>
+                    <span className="font-semibold text-[#0f172a]">{p.name}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${p.verification_status === 'verified' ? 'bg-[#eff6ff] text-[#1d4ed8]' : 'bg-[#fef2f2] text-[#dc2626]'}`}>
                       {p.verification_status === 'verified' ? '已核实' : '待核实'}
                     </span>
                   </div>
-                  <div className="text-[#53605a]">{p.summary}</div>
-                  <div className="text-[11px] text-[#7c8781]">价格：{p.price_info} · 地址：{p.address}</div>
+                  <div className="text-[#475569]">{p.summary}</div>
+                  <div className="text-[11px] text-[#64748b]">价格：{p.price_info} · 地址：{p.address}</div>
                 </div>
               ))
             )}
@@ -189,22 +189,22 @@ export function AssetsView({ orgId }: { orgId: string }) {
 
         {/* 素材登记与展示 */}
         <div className="space-y-4">
-          <form onSubmit={handleCreateAsset} className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-[#183a30] flex items-center gap-1.5">
-              <ImageIcon className="w-4 h-4 text-[#4c7364]" /> 登记品牌与实景素材
+          <form onSubmit={handleCreateAsset} className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-[#1d4ed8] flex items-center gap-1.5">
+              <ImageIcon className="w-4 h-4 text-[#2563eb]" /> 登记品牌与实景素材
             </h2>
             <input
               required
               value={aTitle}
               onChange={(e) => setATitle(e.target.value)}
               placeholder="素材名称 *"
-              className="w-full px-3 py-2 text-sm rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-3 py-2 text-sm rounded border border-[#e2e8f0] bg-white"
             />
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={aCat}
                 onChange={(e) => setACat(e.target.value as typeof aCat)}
-                className="px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                className="px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
               >
                 <option value="real_scenic">景区/民宿实景照片</option>
                 <option value="product_photo">产品实拍图</option>
@@ -215,41 +215,41 @@ export function AssetsView({ orgId }: { orgId: string }) {
                 value={aSource}
                 onChange={(e) => setASource(e.target.value)}
                 placeholder="来源与版权说明"
-                className="px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                className="px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
               />
             </div>
             <input
               value={aUrl}
               onChange={(e) => setAUrl(e.target.value)}
               placeholder="图片路径或 URL"
-              className="w-full px-3 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-3 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
             />
-            <label className="flex items-center gap-2 text-xs text-[#53605a]">
+            <label className="flex items-center gap-2 text-xs text-[#475569]">
               <input type="checkbox" checked={aIsAi} onChange={(e) => setAIsAi(e.target.checked)} />
               <span>此素材由 AI 生成（系统将禁止标记为真实景区照片）</span>
             </label>
-            <button type="submit" className="w-full py-2 rounded bg-[#183a30] text-white text-sm font-medium">
+            <button type="submit" className="w-full py-2 rounded bg-[#1d4ed8] text-white text-sm font-medium">
               登记素材
             </button>
           </form>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {assets.map((a) => (
-              <div key={a.id} className="bg-[#fcfbf8] border border-[#dfd9cb] rounded overflow-hidden">
-                <div className="h-36 bg-[#ebe6da] flex items-center justify-center overflow-hidden">
+              <div key={a.id} className="bg-[#ffffff] border border-[#e2e8f0] rounded overflow-hidden">
+                <div className="h-36 bg-[#f1f5f9] flex items-center justify-center overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a.file_url} alt={a.title} className="w-full h-full object-cover" />
                 </div>
                 <div className="p-3 text-xs space-y-1">
-                  <div className="font-medium text-[#1a2420] line-clamp-1">{a.title}</div>
+                  <div className="font-medium text-[#0f172a] line-clamp-1">{a.title}</div>
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-[#7c8781]">{a.source_origin}</span>
+                    <span className="text-[#64748b]">{a.source_origin}</span>
                     {a.is_ai_generated ? (
-                      <span className="text-[#b05b43] inline-flex items-center gap-0.5">
+                      <span className="text-[#dc2626] inline-flex items-center gap-0.5">
                         <AlertTriangle className="w-3 h-3" /> AI概念图
                       </span>
                     ) : (
-                      <span className="text-[#183a30] inline-flex items-center gap-0.5">
+                      <span className="text-[#1d4ed8] inline-flex items-center gap-0.5">
                         <ShieldCheck className="w-3 h-3" /> {a.copyright_status}
                       </span>
                     )}

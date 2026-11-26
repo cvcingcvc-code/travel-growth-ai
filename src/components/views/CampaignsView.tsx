@@ -98,6 +98,24 @@ export function CampaignsView({ orgId, onNavigate }: { orgId: string; onNavigate
 
       {notice && <div className="p-3 rounded-md bg-[#eff6ff] border border-[#bfdbfe] text-xs text-[#1e40af]">{notice}</div>}
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        {[
+          { type: '稳健型', desc: '聚焦已核实核心卖点与行前清单，优先保障收藏率与事实零风险', preset: '稳健型：以已核实卖点与行前攻略清单建立小红书收藏基线' },
+          { type: '创意型', desc: '强调情绪共鸣、场景反差与在地文化故事，提升传播分享率', preset: '创意型：结合在地文化故事与情绪反差，放大双人/亲子场景种草' },
+          { type: '实验型', desc: '围绕低门槛体验单品做 A/B 封面与钩子对照测试，探索增量客群', preset: '实验型：以低门槛半日体验单品做 A/B 封面与标题转化测试' },
+        ].map((dir) => (
+          <button
+            key={dir.type}
+            type="button"
+            onClick={() => setGoal(dir.preset)}
+            className="p-3 rounded-lg bg-white border border-[#e2e8f0] hover:border-[#2563eb] text-left space-y-1 transition-colors"
+          >
+            <div className="font-semibold text-[#1d4ed8]">{dir.type}营销方向（点击应用）</div>
+            <div className="text-[11px] text-[#64748b]">{dir.desc}</div>
+          </button>
+        ))}
+      </div>
+
       <form onSubmit={handleGenerate} className="bg-white border border-[#e2e8f0] rounded-lg p-4 grid grid-cols-1 md:grid-cols-12 gap-3 text-xs">
         <select
           value={productId}

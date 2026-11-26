@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { BookmarkCheck, Sparkles, ShieldAlert } from 'lucide-react';
@@ -134,14 +134,14 @@ export function AnalysisView({ orgId }: { orgId: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-[#183a30]">爆款分析中心</h1>
-        <p className="text-xs text-[#53605a] mt-0.5">
+        <h1 className="text-xl font-semibold text-[#1d4ed8]">爆款分析中心</h1>
+        <p className="text-xs text-[#475569] mt-0.5">
           将原始案例转化为 11 维结构化分析，严禁捏造热度指标，支持一键沉淀为企业营销策略卡片。
         </p>
       </div>
 
       {notice && (
-        <div className="p-3 rounded bg-[#ebe6da] border border-[#d8cfb8] text-xs text-[#183a30] flex items-center gap-2">
+        <div className="p-3 rounded bg-[#f1f5f9] border border-[#cbd5e1] text-xs text-[#1d4ed8] flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 shrink-0" />
           <span>{notice}</span>
         </div>
@@ -150,20 +150,20 @@ export function AnalysisView({ orgId }: { orgId: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* 录入案例 + 已保存策略卡 */}
         <div className="space-y-5">
-          <form onSubmit={handleCreateCase} className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-[#183a30]">导入有来源的市场案例</h2>
+          <form onSubmit={handleCreateCase} className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-[#1d4ed8]">导入有来源的市场案例</h2>
             <input
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="案例标题 *"
-              className="w-full px-3 py-2 text-sm rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-3 py-2 text-sm rounded border border-[#e2e8f0] bg-white"
             />
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
-                className="px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                className="px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
               >
                 <option value="xiaohongshu">小红书</option>
                 <option value="douyin">抖音</option>
@@ -174,7 +174,7 @@ export function AnalysisView({ orgId }: { orgId: string }) {
                 value={sourceUrl}
                 onChange={(e) => setSourceUrl(e.target.value)}
                 placeholder="案例来源链接 *"
-                className="px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                className="px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
               />
             </div>
             <textarea
@@ -183,26 +183,26 @@ export function AnalysisView({ orgId }: { orgId: string }) {
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
               placeholder="粘贴案例原文（系统将作为不可信外部文本隔离处理）..."
-              className="w-full px-3 py-2 text-sm rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-3 py-2 text-sm rounded border border-[#e2e8f0] bg-white"
             />
             <button
               type="submit"
-              className="w-full py-2 rounded bg-[#183a30] hover:bg-[#214e41] text-white text-sm font-medium"
+              className="w-full py-2 rounded bg-[#1d4ed8] hover:bg-[#1e40af] text-white text-sm font-medium"
             >
               保存市场案例
             </button>
           </form>
 
-          <div className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-2.5">
-            <h2 className="text-sm font-semibold text-[#183a30] flex items-center gap-1.5">
-              <BookmarkCheck className="w-4 h-4 text-[#4c7364]" />
+          <div className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-2.5">
+            <h2 className="text-sm font-semibold text-[#1d4ed8] flex items-center gap-1.5">
+              <BookmarkCheck className="w-4 h-4 text-[#2563eb]" />
               已沉淀营销策略卡片 ({strategies.length})
             </h2>
             {strategies.map((s) => (
-              <div key={s.id} className="p-2.5 rounded bg-[#f5f2eb] border border-[#e5dfd2] text-xs space-y-1">
-                <div className="font-medium text-[#183a30]">{s.title}</div>
-                <div className="text-[#53605a] text-[11px]">钩子：{s.hook_pattern}</div>
-                <div className="text-[#7c8781] text-[11px]">结构：{s.structure_template}</div>
+              <div key={s.id} className="p-2.5 rounded bg-[#f8fafc] border border-[#e2e8f0] text-xs space-y-1">
+                <div className="font-medium text-[#1d4ed8]">{s.title}</div>
+                <div className="text-[#475569] text-[11px]">钩子：{s.hook_pattern}</div>
+                <div className="text-[#64748b] text-[11px]">结构：{s.structure_template}</div>
               </div>
             ))}
           </div>
@@ -211,26 +211,26 @@ export function AnalysisView({ orgId }: { orgId: string }) {
         {/* 右侧案例与 11 维拆解详情 */}
         <div className="lg:col-span-2 space-y-4">
           {cases.length === 0 ? (
-            <div className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-8 text-center text-xs text-[#7c8781]">
+            <div className="bg-[#ffffff] border border-[#e2e8f0] rounded p-8 text-center text-xs text-[#64748b]">
               当前企业暂无市场案例，请在左侧录入。
             </div>
           ) : (
             cases.map((c) => (
-              <div key={c.id} className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[#ebe6da] pb-3">
+              <div key={c.id} className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[#f1f5f9] pb-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 text-[10px] rounded bg-[#ebe6da] text-[#183a30]">{c.platform}</span>
-                      {c.is_demo ? <span className="text-[10px] text-[#b48446]">演示案例</span> : null}
-                      <h3 className="text-sm font-semibold text-[#1a2420]">{c.title}</h3>
+                      <span className="px-2 py-0.5 text-[10px] rounded bg-[#f1f5f9] text-[#1d4ed8]">{c.platform}</span>
+                      {c.is_demo ? <span className="text-[10px] text-[#2563eb]">演示案例</span> : null}
+                      <h3 className="text-sm font-semibold text-[#0f172a]">{c.title}</h3>
                     </div>
-                    <div className="text-[11px] text-[#7c8781] mt-1">来源：{c.source_url || '手动录入'}</div>
+                    <div className="text-[11px] text-[#64748b] mt-1">来源：{c.source_url || '手动录入'}</div>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleAnalyze(c.id)}
                       disabled={analyzingId === c.id}
-                      className="px-3 py-1.5 rounded bg-[#183a30] text-white text-xs inline-flex items-center gap-1 disabled:opacity-60"
+                      className="px-3 py-1.5 rounded bg-[#1d4ed8] text-white text-xs inline-flex items-center gap-1 disabled:opacity-60"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       {analyzingId === c.id ? '分析中...' : c.latestAnalysis ? '重新拆解' : '执行 11 维拆解'}
@@ -238,7 +238,7 @@ export function AnalysisView({ orgId }: { orgId: string }) {
                     {c.latestAnalysis && (
                       <button
                         onClick={() => handleSaveStrategy(c)}
-                        className="px-3 py-1.5 rounded border border-[#183a30] text-[#183a30] text-xs hover:bg-[#ebe6da]"
+                        className="px-3 py-1.5 rounded border border-[#1d4ed8] text-[#1d4ed8] text-xs hover:bg-[#f1f5f9]"
                       >
                         存为策略卡片
                       </button>
@@ -246,7 +246,7 @@ export function AnalysisView({ orgId }: { orgId: string }) {
                   </div>
                 </div>
 
-                <p className="text-xs text-[#53605a] bg-[#f5f2eb] p-2.5 rounded">{c.raw_text}</p>
+                <p className="text-xs text-[#475569] bg-[#f8fafc] p-2.5 rounded">{c.raw_text}</p>
 
                 {c.latestAnalysis && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs pt-1">
@@ -262,12 +262,12 @@ export function AnalysisView({ orgId }: { orgId: string }) {
                       ['可复用策略', c.latestAnalysis.reusable_strategy],
                       [`企业匹配度 (${c.latestAnalysis.org_fit_score}分)`, c.latestAnalysis.org_fit_reason],
                     ].map(([k, v]) => (
-                      <div key={k} className="p-2.5 rounded border border-[#e5dfd2] bg-white">
-                        <div className="text-[11px] font-semibold text-[#183a30]">{k}</div>
-                        <div className="text-[#53605a] mt-0.5 leading-relaxed">{v}</div>
+                      <div key={k} className="p-2.5 rounded border border-[#e2e8f0] bg-white">
+                        <div className="text-[11px] font-semibold text-[#1d4ed8]">{k}</div>
+                        <div className="text-[#475569] mt-0.5 leading-relaxed">{v}</div>
                       </div>
                     ))}
-                    <div className="md:col-span-2 p-2 rounded bg-[#ebe6da] text-[11px] text-[#53605a] flex justify-between">
+                    <div className="md:col-span-2 p-2 rounded bg-[#f1f5f9] text-[11px] text-[#475569] flex justify-between">
                       <span>证据来源：{c.latestAnalysis.evidence_source}</span>
                       <span>可信度：{c.latestAnalysis.credibility_level} · 模式：{c.latestAnalysis.data_origin === 'external_agent' ? 'Codex 证据分析' : c.latestAnalysis.data_origin}</span>
                     </div>
