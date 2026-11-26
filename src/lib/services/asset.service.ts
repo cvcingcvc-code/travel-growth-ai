@@ -1,5 +1,5 @@
 import { getDb } from '../db/client';
-import { newId, requireOrgAccess, writeAuditLog } from '../db/tenant';
+import { newId, requireOrgAccess, writeAuditLog, type ActorContext } from '../db/tenant';
 
 export function listAssets(organizationId: string, category?: string) {
   requireOrgAccess(organizationId);
@@ -23,6 +23,8 @@ export function createAsset(params: {
   sourceOrigin: string;
   copyrightStatus: 'owned' | 'licensed' | 'pending_verification' | 'ai_generated_concept';
   isAiGenerated: boolean;
+  isDemo?: boolean;
+  actor?: ActorContext;
 }) {
   requireOrgAccess(params.organizationId);
 
@@ -35,7 +37,7 @@ export function createAsset(params: {
   const id = newId('ast');
   db.prepare(
     `INSERT INTO assets (id, organization_id, title, category, file_url, mime_type, source_origin, copyright_status, is_ai_generated, is_demo)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     params.organizationId,
@@ -45,11 +47,13 @@ export function createAsset(params: {
     params.mimeType ?? 'image/jpeg',
     params.sourceOrigin.trim(),
     params.isAiGenerated ? 'ai_generated_concept' : params.copyrightStatus,
-    params.isAiGenerated ? 1 : 0
+    params.isAiGenerated ? 1 : 0,
+    params.isDemo ? 1 : 0
   );
 
   writeAuditLog({
     organizationId: params.organizationId,
+    ...params.actor,
     action: 'asset.create',
     targetType: 'asset',
     targetId: id,

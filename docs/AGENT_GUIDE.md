@@ -3,7 +3,7 @@
 TravelGrowth AI 原生支持其他智能体通过标准 REST API 或 MCP 端点接管文旅内容营销流程。
 
 ## 1. 认证与权限
-- 请求 `/api/mcp` 需在 Header 中携带 `Authorization: Bearer <AGENT_API_TOKEN>` 与 `X-Organization-Id: <org_id>`。
+- 请求 `/api/mcp` 需在 Header 中携带 `Authorization: Bearer <AGENT_API_TOKEN>` 与 `X-Organization-Id: <org_id>`。服务端需配置 `AGENT_ORGANIZATION_ID`。Token 绑定该企业，`external-agent` 成员必须已加入企业。写入需要编辑权限。
 - 外部 Agent 默认采用**最小权限**，不可直接执行内容对外发布或删除核心企业知识。
 
 ## 2. 支持的 MCP 工具（11 项）

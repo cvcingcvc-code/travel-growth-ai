@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Check, Copy, FileText, Save, Sparkles, AlertTriangle } from 'lucide-react';
 
 interface ProductItem {
@@ -44,6 +44,8 @@ export function CreationView({ orgId }: { orgId: string }) {
   const [strategies, setStrategies] = useState<StrategyItem[]>([]);
   const [projects, setProjects] = useState<ContentProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const selection = useRef('');
+  const loadSequence = useRef(0);
 
   const [productId, setProductId] = useState('');
   const [strategyId, setStrategyId] = useState('');
@@ -65,6 +67,7 @@ export function CreationView({ orgId }: { orgId: string }) {
   const [notice, setNotice] = useState('');
 
   async function loadAll() {
+    const sequence = ++loadSequence.current;
     const [pRes, sRes, cRes] = await Promise.all([
       fetch('/api/v1/products', { headers: { 'x-organization-id': orgId } }),
       fetch('/api/v1/strategies', { headers: { 'x-organization-id': orgId } }),
@@ -73,6 +76,7 @@ export function CreationView({ orgId }: { orgId: string }) {
     const pJson = await pRes.json();
     const sJson = await sRes.json();
     const cJson = await cRes.json();
+    if (sequence !== loadSequence.current) return;
     if (pJson.ok) {
       setProducts(pJson.data);
       if (pJson.data[0] && !productId) setProductId(pJson.data[0].id);
@@ -80,14 +84,16 @@ export function CreationView({ orgId }: { orgId: string }) {
     if (sJson.ok) setStrategies(sJson.data);
     if (cJson.ok) {
       setProjects(cJson.data);
-      if (cJson.data.length > 0 && !selectedProjectId) {
+      if (cJson.data.length > 0 && !selection.current) {
         selectProject(cJson.data[0]);
       }
     }
   }
 
   function selectProject(p: ContentProject) {
+    selection.current = p.id;
     setSelectedProjectId(p.id);
+    setCopied(false);
     const v = p.versions[0];
     if (v) {
       setEditTitle(v.selected_title);
@@ -98,8 +104,8 @@ export function CreationView({ orgId }: { orgId: string }) {
   }
 
   useEffect(() => {
-    setSelectedProjectId('');
     loadAll();
+    return () => { loadSequence.current++; };
   }, [orgId]);
 
   async function handleGenerateTopics() {
@@ -162,11 +168,12 @@ export function CreationView({ orgId }: { orgId: string }) {
   }
 
   async function handleSaveDraft(reviewStatus: 'draft' | 'pending_review' | 'approved' = 'draft') {
-    if (!selectedProjectId) return;
+    const projectId = selectedProjectId;
+    if (!projectId) return;
     setSaving(true);
     setNotice('');
     try {
-      const res = await fetch(`/api/v1/creations/${selectedProjectId}`, {
+      const res = await fetch(`/api/v1/creations/${projectId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-organization-id': orgId },
         body: JSON.stringify({
@@ -180,7 +187,7 @@ export function CreationView({ orgId }: { orgId: string }) {
       const json = await res.json();
       if (json.ok) {
         await loadAll();
-        selectProject(json.data);
+        if (selection.current === projectId) selectProject(json.data);
         setNotice(`已保存新版本草稿（审核状态：${reviewStatus}）。`);
       }
     } finally {
@@ -188,20 +195,39 @@ export function CreationView({ orgId }: { orgId: string }) {
     }
   }
 
-  function handleCopyAll() {
-    const full = `${editTitle}\n\n${editBody}\n\n${editCta}`;
-    navigator.clipboard?.writeText(full);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
+  function getExportText() {
+    return [editTitle, editBody, hashtags.join(' '), editCta].filter(Boolean).join('\n\n');
+  }
+
+  async function handleCopyAll() {
+    try {
+      await navigator.clipboard.writeText(getExportText());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setNotice('复制未完成，请使用下载正文。');
+    }
+  }
+
+  function handleDownload() {
+    const url = URL.createObjectURL(new Blob([getExportText()], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${activeProject?.id ?? 'draft'}.txt`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   const activeProject = projects.find((p) => p.id === selectedProjectId);
   const latestVersion = activeProject?.versions[0];
   const titles: string[] = latestVersion ? JSON.parse(latestVersion.titles_json || '[]') : [];
-  const carousel: Array<{ page: number; title: string; visual: string; copy: string }> = latestVersion
+  const hashtags: string[] = latestVersion ? JSON.parse(latestVersion.hashtags_json || '[]') : [];
+  const carousel: Array<{ page: number; title: string; visual: string; copy: string; imageUrl?: string }> = latestVersion
     ? JSON.parse(latestVersion.carousel_plan_json || '[]')
     : [];
-  const citations: Array<{ title: string; category: string; verificationStatus: string }> = latestVersion
+  const citations: Array<{ documentId?: string; title: string; category: string; verificationStatus: string }> = latestVersion
     ? JSON.parse(latestVersion.knowledge_citations_json || '[]')
     : [];
   const riskCheck: { passed?: boolean; warnings?: string[] } = latestVersion
@@ -376,6 +402,8 @@ export function CreationView({ orgId }: { orgId: string }) {
                       ? '测试模式生成'
                       : latestVersion.data_origin === 'demo'
                       ? '演示数据'
+                      : latestVersion.data_origin === 'external_agent'
+                      ? 'Codex 创作 · 演示企业'
                       : '真实保存'}
                   </span>
                   <span className="px-2 py-0.5 text-[10px] rounded border border-[#dfd9cb] text-[#183a30]">
@@ -389,6 +417,12 @@ export function CreationView({ orgId }: { orgId: string }) {
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-[#4c7364]" /> : <Copy className="w-3.5 h-3.5" />}
                     {copied ? '已复制' : '复制全文'}
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    className="px-3 py-1.5 rounded border border-[#dfd9cb] text-xs hover:bg-[#f5f2eb]"
+                  >
+                    下载正文
                   </button>
                   <button
                     onClick={() => handleSaveDraft('draft')}
@@ -442,17 +476,19 @@ export function CreationView({ orgId }: { orgId: string }) {
               {/* 大尺寸标题与正文编辑器 */}
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#53605a] mb-1">主标题</label>
+                  <label htmlFor="draft-title" className="block text-xs font-medium text-[#53605a] mb-1">主标题</label>
                   <input
+                    id="draft-title"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     className="w-full px-3.5 py-2.5 text-base font-medium rounded border border-[#dfd9cb] bg-white focus:outline-none focus:border-[#183a30]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#53605a] mb-1">发布正文（可直接编辑并保存新版本）</label>
+                  <label htmlFor="draft-body" className="block text-xs font-medium text-[#53605a] mb-1">发布正文（可直接编辑并保存新版本）</label>
                   <textarea
                     rows={10}
+                    id="draft-body"
                     value={editBody}
                     onChange={(e) => setEditBody(e.target.value)}
                     className="w-full px-3.5 py-3 text-sm leading-relaxed rounded border border-[#dfd9cb] bg-white focus:outline-none focus:border-[#183a30]"
@@ -480,6 +516,8 @@ export function CreationView({ orgId }: { orgId: string }) {
                 </div>
               </div>
 
+              {hashtags.length > 0 && <div className="text-xs text-[#4c7364]">{hashtags.join(' ')}</div>}
+
               {/* 多页图文创作方案 */}
               {carousel.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-[#ebe6da]">
@@ -488,6 +526,31 @@ export function CreationView({ orgId }: { orgId: string }) {
                     {carousel.map((slide) => (
                       <div key={slide.page} className="p-3 rounded bg-[#f5f2eb] border border-[#e5dfd2] text-xs space-y-1">
                         <div className="font-semibold text-[#183a30]">P{slide.page} · {slide.title}</div>
+                        {slide.imageUrl?.startsWith('/demo-assets/') ? (
+                          <>
+                            <a href={slide.imageUrl} target="_blank" rel="noreferrer">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={slide.imageUrl} alt={`第 ${slide.page} 页成品 · ${slide.title}`}
+                                width={1080} height={1440} className="w-full h-auto rounded border border-[#dfd9cb]" />
+                            </a>
+                            <a href={slide.imageUrl} download className="block text-[#31594b] underline">下载第 {slide.page} 页 PNG</a>
+                          </>
+                        ) : (
+                          <div className="aspect-[3/4] p-3.5 rounded bg-[#fcfbf8] border border-[#dfd9cb] flex flex-col justify-between">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-[10px] text-[#4c7364]">
+                                <span>PAGE {slide.page}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-[#e3ede8] text-[#183a30]">3:4 概念排版</span>
+                              </div>
+                              <div className="w-6 h-0.5 bg-[#b48446]" />
+                              <div className="text-xs font-semibold text-[#183a30] leading-snug">{slide.title}</div>
+                              <div className="text-[11px] text-[#53605a] leading-relaxed">{slide.copy}</div>
+                            </div>
+                            <div className="text-[10px] text-center py-1 rounded bg-[#ebe6da] text-[#7c8781]">
+                              概念示意 · 非真实景区实景
+                            </div>
+                          </div>
+                        )}
                         <div className="text-[11px] text-[#4c7364]">画面：{slide.visual}</div>
                         <div className="text-[#53605a]">{slide.copy}</div>
                       </div>
@@ -506,6 +569,7 @@ export function CreationView({ orgId }: { orgId: string }) {
                     {citations.map((c, i) => (
                       <span
                         key={i}
+                        title={c.documentId}
                         className="px-2.5 py-1 rounded bg-[#e3ede8] text-[#183a30] text-[11px]"
                       >
                         [{c.category}] {c.title} ({c.verificationStatus === 'verified' ? '已核实' : '待核实'})

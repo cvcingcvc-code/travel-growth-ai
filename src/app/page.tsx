@@ -98,7 +98,7 @@ export default function HomePage() {
       ) : activeTab === 'knowledge' ? (
         <KnowledgeView orgId={activeOrgId} />
       ) : activeTab === 'creation' ? (
-        <CreationView orgId={activeOrgId} />
+        <CreationView key={activeOrgId} orgId={activeOrgId} />
       ) : activeTab === 'assets' ? (
         <AssetsView orgId={activeOrgId} />
       ) : activeTab === 'models' ? (

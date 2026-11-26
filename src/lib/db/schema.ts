@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS case_analyses (
   org_fit_reason TEXT NOT NULL DEFAULT '',
   evidence_source TEXT NOT NULL DEFAULT '',
   credibility_level TEXT NOT NULL DEFAULT 'medium', -- high | medium | low
-  data_origin TEXT NOT NULL DEFAULT 'real', -- real | demo | test_mode
+  data_origin TEXT NOT NULL DEFAULT 'real', -- real | demo | test_mode | external_agent
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS content_versions (
   conversion_cta TEXT NOT NULL DEFAULT '',
   knowledge_citations_json TEXT NOT NULL DEFAULT '[]',
   risk_check_json TEXT NOT NULL DEFAULT '{}',
-  data_origin TEXT NOT NULL DEFAULT 'real', -- real | demo | test_mode
+  data_origin TEXT NOT NULL DEFAULT 'real', -- real | demo | test_mode | external_agent
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

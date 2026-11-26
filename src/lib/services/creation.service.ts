@@ -331,7 +331,7 @@ export function saveDraftVersion(params: {
       id, organization_id, project_id, version_number, titles_json, selected_title, body_copy,
       cover_design_note, carousel_plan_json, image_prompts_json, hashtags_json, conversion_cta,
       knowledge_citations_json, risk_check_json, data_origin
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'real')`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     newVerId,
     params.organizationId,
@@ -346,7 +346,8 @@ export function saveDraftVersion(params: {
     String(latest?.hashtags_json ?? '[]'),
     params.conversionCta ?? String(latest?.conversion_cta ?? ''),
     String(latest?.knowledge_citations_json ?? '[]'),
-    String(latest?.risk_check_json ?? '{}')
+    String(latest?.risk_check_json ?? '{}'),
+    latest?.data_origin === 'external_agent' ? 'external_agent' : 'real'
   );
 
   db.prepare(

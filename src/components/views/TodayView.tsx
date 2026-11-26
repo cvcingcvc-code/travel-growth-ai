@@ -17,6 +17,8 @@ interface DashboardData {
   intelligenceItems: Array<{ id: string; title: string; category: string; source_name: string; collected_at: string; is_demo: number }>;
   strategies: Array<{ id: string; title: string; target_platform: string; hook_pattern: string; is_demo: number }>;
   projects: Array<{ id: string; topic: string; review_status: string; target_platform: string; updated_at: string; is_demo: number }>;
+  workflowRuns: Array<{ id: string; workflow_name: string; status: string; summary: string; created_at: string }>;
+  draftMonitoring: Array<{ id: string; topic: string; published_url: string | null; published_at: string | null; snapshots: number }>;
   knowledgeStats: Array<{ category: string; count: number; verified_count: number }>;
   providerStatuses: Array<{ capability: string; provider: string; modelName: string; status: string; statusNote: string }>;
   modelRuns: Array<{ id: string; task_type: string; provider: string; model_name: string; status: string; duration_ms: number; created_at: string }>;
@@ -211,6 +213,40 @@ export function TodayView({
           </div>
         </section>
       </div>
+
+      {data.workflowRuns.length > 0 && (
+        <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-[#183a30]">智能体执行记录</h2>
+          {data.workflowRuns.map((run) => (
+            <div key={run.id} className="rounded bg-[#f5f2eb] p-3 text-xs space-y-1">
+              <div className="font-semibold text-[#183a30]">{run.workflow_name} · {run.status}</div>
+              <p className="whitespace-pre-wrap text-[#53605a]">{run.summary}</p>
+              <div className="text-[#53605a]">{run.id} · {run.created_at} UTC</div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {data.draftMonitoring.length > 0 && (
+        <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-[#183a30]">运营复盘 · 真实数据</h2>
+          <p className="text-xs text-[#53605a]">模拟数据未录入。真实数据在人工记录发布后采集。</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-[#53605a]">
+              <thead><tr><th className="p-2">草稿</th><th className="p-2">发布时间及链接</th><th className="p-2">采集指标</th>
+                <th className="p-2">24 小时</th><th className="p-2">72 小时</th><th className="p-2">7 天</th></tr></thead>
+              <tbody>{data.draftMonitoring.map((draft) => (
+                <tr key={draft.id} className="border-t border-[#dfd9cb]">
+                  <th scope="row" className="p-2 text-[#183a30]">{draft.topic}</th>
+                  <td className="p-2">{draft.published_at ?? '未发布'}{draft.published_url ? ` · ${draft.published_url}` : ' · 暂无链接'}</td>
+                  <td className="p-2">曝光、点赞、收藏、评论、咨询、点击、转化{draft.snapshots ? ` · 已录入 ${draft.snapshots} 期` : ' · 未采集'}</td>
+                  {['24h', '72h', '7d'].map((window) => <td key={window} className="p-2 whitespace-nowrap">{draft.snapshots ? '待划分窗口' : '未采集'}</td>)}
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* 系统能力与接入状态矩阵 */}
       <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">

@@ -20,4 +20,5 @@
 - `PUT /api/v1/creations/[id]` — 编辑内容、保存草稿新版本、人工审核状态流转
 - `GET/POST /api/v1/assets` — 素材管理与版权标记
 - `GET/POST /api/v1/models` — 模型配置、连通性测试与 `model_runs` 日志
+- `POST /api/v1/agent` — 企业绑定的演示工作空间导入端点，支持 `collect_case`、`save_analysis`、`save_strategy`、`save_knowledge`、`register_asset`、`import_draft`、`record_run`。通过 Bearer Token 与企业成员编辑权限校验。
 - `POST /api/mcp` — MCP 工具调用端点（支持 11 个标准工具）

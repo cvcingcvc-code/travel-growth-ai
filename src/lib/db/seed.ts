@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { getDb } from './client';
 import { tokenizeForSearch, computeDeterministicEmbedding } from '../utils/text';
+import { importShanhaiShiguangDemo } from './import-shanhai';
 
 export function seedDatabaseIfEmpty(force = false) {
   const db = getDb();
@@ -413,8 +414,10 @@ export function seedDatabaseIfEmpty(force = false) {
   // Workflow run & audit log
   db.prepare(`
     INSERT OR IGNORE INTO workflow_runs (id, organization_id, workflow_name, trigger_source, status, summary, finished_at)
-    VALUES ('wf_seed_1', ?, '系统初始化与演示数据种子写入', 'seed', 'completed', '已初始化19张核心表与2个隔离企业工作空间（均明确标记为演示数据）', datetime('now'))
+    VALUES ('wf_seed_1', ?, '系统初始化与演示数据种子写入', 'seed', 'completed', '已初始化19张核心表与3个隔离演示企业工作空间（均明确标记为演示数据）', datetime('now'))
   `).run(org1Id);
+
+  importShanhaiShiguangDemo();
 
   return { seeded: true };
 }

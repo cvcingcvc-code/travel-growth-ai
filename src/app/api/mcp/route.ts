@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureBootstrapped, handleApiError, ok } from '@/lib/api/http';
-import { requireOrgAccess, writeAuditLog } from '@/lib/db/tenant';
+import { TenantAccessError, writeAuditLog } from '@/lib/db/tenant';
+import { requireAgentAccess } from '@/lib/api/agent-auth';
 import { analyzeContentCase } from '@/lib/services/analysis.service';
 import {
   analyzePerformance,
@@ -40,33 +41,25 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     ensureBootstrapped();
-    const expectedToken = process.env.AGENT_API_TOKEN;
-    const authHeader = req.headers.get('authorization');
-    if (expectedToken && authHeader && authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json(
-        { ok: false, error: { code: 'UNAUTHORIZED_AGENT', message: '无效的 Agent Token' } },
-        { status: 401 }
-      );
-    }
-
     const body = (await req.json()) as {
       tool: string;
       organizationId?: string;
       input?: Record<string, unknown>;
     };
-    const orgId = (
-      req.headers.get('x-organization-id') ||
-      body.organizationId ||
-      ''
-    ).trim();
+    const headerOrg = req.headers.get('x-organization-id')?.trim();
+    const bodyOrg = body.organizationId?.trim();
+    if (headerOrg && bodyOrg && headerOrg !== bodyOrg) {
+      throw new TenantAccessError('请求中的企业标识不一致', 400, 'ORG_MISMATCH');
+    }
+    const orgId = headerOrg || bodyOrg || '';
     const input = body.input ?? {};
-
-    requireOrgAccess(orgId, { actorType: 'agent', actorId: 'external-agent' });
+    const tool = MCP_TOOLS.find((item) => item.name === body.tool);
+    const readonlyCollection = body.tool === 'collect_trends' && !input.title && !input.rawContent;
+    const { actor } = requireAgentAccess(req, orgId, tool?.permission === 'write_safe' && !readonlyCollection);
 
     writeAuditLog({
       organizationId: orgId,
-      actorType: 'agent',
-      actorId: 'external-agent',
+      ...actor,
       action: `mcp.${body.tool}`,
       targetType: 'mcp_tool',
       targetId: body.tool,

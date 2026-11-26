@@ -269,7 +269,7 @@ export function AnalysisView({ orgId }: { orgId: string }) {
                     ))}
                     <div className="md:col-span-2 p-2 rounded bg-[#ebe6da] text-[11px] text-[#53605a] flex justify-between">
                       <span>证据来源：{c.latestAnalysis.evidence_source}</span>
-                      <span>可信度：{c.latestAnalysis.credibility_level} · 模式：{c.latestAnalysis.data_origin}</span>
+                      <span>可信度：{c.latestAnalysis.credibility_level} · 模式：{c.latestAnalysis.data_origin === 'external_agent' ? 'Codex 证据分析' : c.latestAnalysis.data_origin}</span>
                     </div>
                   </div>
                 )}

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+  <rect width="600" height="800" fill="#F5F2EB"/>
+  <rect x="28" y="28" width="544" height="744" fill="#FCFBF8" stroke="#DFD9CB" stroke-width="2"/>
+  <path d="M0 560 Q180 470 340 530 T600 490 L600 772 L0 772 Z" fill="#8FA89B" opacity="0.35"/>
+  <path d="M0 640 Q220 570 420 620 T600 590 L600 772 L0 772 Z" fill="#4C7364" opacity="0.28"/>
+  <path d="M360 772 Q310 640 380 560 Q430 500 350 430" fill="none" stroke="#FCFBF8" stroke-width="18" stroke-linecap="round" opacity="0.85"/>
+  <circle cx="352" cy="410" r="8" fill="#183A30" opacity="0.6"/>
+  <circle cx="372" cy="414" r="7" fill="#4C7364" opacity="0.6"/>
+  <text x="64" y="135" fill="#183A30" font-size="34" font-weight="600" font-family="sans-serif">周末半日慢游清单</text>
+  <text x="64" y="180" fill="#53605A" font-size="18" font-family="sans-serif">一个主景 · 一段可选散步 · 一张行前检查表</text>
+  <rect x="64" y="212" width="76" height="4" fill="#B48446"/>
+  <rect x="160" y="716" width="280" height="32" rx="4" fill="#EBE6DA"/>
+  <text x="300" y="737" text-anchor="middle" fill="#7C8781" font-size="13" font-family="sans-serif">概念示意 · 非真实景区实景</text>
+</svg>

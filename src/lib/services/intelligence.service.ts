@@ -1,5 +1,5 @@
 import { getDb } from '../db/client';
-import { newId, requireOrgAccess, writeAuditLog } from '../db/tenant';
+import { newId, requireOrgAccess, writeAuditLog, type ActorContext } from '../db/tenant';
 import { computeContentHash } from '../utils/text';
 
 export function listSources(organizationId: string) {
@@ -35,6 +35,7 @@ export function ingestManualIntelligence(params: {
   sourceName?: string;
   sourceUrl?: string;
   isDemo?: boolean;
+  actor?: ActorContext;
 }) {
   requireOrgAccess(params.organizationId);
   const db = getDb();
@@ -68,6 +69,7 @@ export function ingestManualIntelligence(params: {
 
   writeAuditLog({
     organizationId: params.organizationId,
+    ...params.actor,
     action: 'intelligence.ingest',
     targetType: 'intelligence_item',
     targetId: id,

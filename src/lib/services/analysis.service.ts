@@ -1,5 +1,5 @@
 import { getDb } from '../db/client';
-import { newId, requireOrgAccess, writeAuditLog } from '../db/tenant';
+import { newId, requireOrgAccess, writeAuditLog, type ActorContext } from '../db/tenant';
 import { generateTextWithRegistry } from '../providers/registry';
 import { wrapUntrustedInput } from '../utils/text';
 import { getCompanyProfile } from './organization.service';
@@ -26,18 +26,29 @@ export function createContentCase(params: {
   platform?: string;
   title: string;
   authorHandle?: string;
+  intelligenceItemId?: string;
+  collectedAt?: string;
   sourceUrl: string;
   rawText: string;
   metrics?: Record<string, number | string>;
   metricsVerified?: boolean;
   isDemo?: boolean;
+  actor?: ActorContext;
 }) {
   requireOrgAccess(params.organizationId);
   const db = getDb();
+  if (params.intelligenceItemId) {
+    const source = db.prepare('SELECT id FROM intelligence_items WHERE id = ? AND organization_id = ?')
+      .get(params.intelligenceItemId, params.organizationId);
+    if (!source) throw new Error('引用的市场情报不在当前企业');
+    const linked = db.prepare('SELECT * FROM content_cases WHERE organization_id = ? AND intelligence_item_id = ?')
+      .get(params.organizationId, params.intelligenceItemId);
+    if (linked) return linked;
+  }
   const id = newId('case');
   db.prepare(
-    `INSERT INTO content_cases (id, organization_id, platform, title, author_handle, source_url, raw_text, metrics_json, metrics_verified, is_demo)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO content_cases (id, organization_id, platform, title, author_handle, source_url, raw_text, metrics_json, metrics_verified, is_demo, intelligence_item_id, collected_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, datetime('now')))`
   ).run(
     id,
     params.organizationId,
@@ -48,11 +59,14 @@ export function createContentCase(params: {
     params.rawText.trim(),
     JSON.stringify(params.metrics ?? {}),
     params.metricsVerified ? 1 : 0,
-    params.isDemo ? 1 : 0
+    params.isDemo ? 1 : 0,
+    params.intelligenceItemId ?? null,
+    params.collectedAt ?? null
   );
 
   writeAuditLog({
     organizationId: params.organizationId,
+    ...params.actor,
     action: 'case.create',
     targetType: 'content_case',
     targetId: id,
@@ -189,13 +203,20 @@ export function saveStrategyCard(params: {
   structureTemplate: string;
   conversionCta?: string;
   applicableScenarios?: string;
+  status?: 'confirmed' | 'draft';
+  isDemo?: boolean;
+  actor?: ActorContext;
 }) {
   requireOrgAccess(params.organizationId);
   const db = getDb();
+  if (params.caseAnalysisId && !db.prepare('SELECT id FROM case_analyses WHERE id = ? AND organization_id = ?')
+    .get(params.caseAnalysisId, params.organizationId)) {
+    throw new Error('引用的分析不在当前企业');
+  }
   const id = newId('strat');
   db.prepare(
     `INSERT INTO marketing_strategies (id, organization_id, case_analysis_id, title, target_platform, target_audience, hook_pattern, structure_template, conversion_cta, applicable_scenarios, status, is_demo)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 0)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     params.organizationId,
@@ -206,11 +227,14 @@ export function saveStrategyCard(params: {
     params.hookPattern.trim(),
     params.structureTemplate.trim(),
     params.conversionCta ?? '',
-    params.applicableScenarios ?? ''
+    params.applicableScenarios ?? '',
+    params.status ?? 'confirmed',
+    params.isDemo ? 1 : 0
   );
 
   writeAuditLog({
     organizationId: params.organizationId,
+    ...params.actor,
     action: 'strategy.save',
     targetType: 'marketing_strategy',
     targetId: id,

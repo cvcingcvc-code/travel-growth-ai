@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+  <rect width="600" height="800" fill="#F5F2EB"/>
+  <rect x="28" y="28" width="544" height="744" fill="#FCFBF8" stroke="#DFD9CB" stroke-width="2"/>
+  <rect x="84" y="280" width="432" height="68" rx="6" fill="#E3EDE8" stroke="#C3D6CD"/>
+  <text x="116" y="321" fill="#183A30" font-size="20" font-family="sans-serif">① 列刚需点位（一定去 / 可选）</text>
+  <rect x="84" y="370" width="432" height="68" rx="6" fill="#F5F2EB" stroke="#DFD9CB"/>
+  <text x="116" y="411" fill="#183A30" font-size="20" font-family="sans-serif">② 同天同人数算总价（门票 vs 联票）</text>
+  <rect x="84" y="460" width="432" height="68" rx="6" fill="#E3EDE8" stroke="#C3D6CD"/>
+  <text x="116" y="501" fill="#183A30" font-size="20" font-family="sans-serif">③ 核对适用条件、预约与核销</text>
+  <rect x="84" y="550" width="432" height="68" rx="6" fill="#F5F2EB" stroke="#DFD9CB"/>
+  <text x="116" y="591" fill="#183A30" font-size="20" font-family="sans-serif">④ 查看未核销与部分核销退改条款</text>
+  <text x="64" y="135" fill="#183A30" font-size="34" font-weight="600" font-family="sans-serif">景区门票和联票怎么选</text>
+  <text x="64" y="180" fill="#53605A" font-size="18" font-family="sans-serif">亲子周末出游 · 四步购前核对清单</text>
+  <rect x="64" y="212" width="76" height="4" fill="#4C7364"/>
+  <rect x="160" y="716" width="280" height="32" rx="4" fill="#EBE6DA"/>
+  <text x="300" y="737" text-anchor="middle" fill="#7C8781" font-size="13" font-family="sans-serif">概念示意 · 真实票价以官方SKU为准</text>
+</svg>

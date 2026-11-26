@@ -45,8 +45,8 @@ export function requireOrgAccess(
     const member = db
       .prepare('SELECT role FROM memberships WHERE organization_id = ? AND user_id = ?')
       .get(org.id, actor.actorId) as { role: string } | undefined;
-    // 外部 Agent 默认最小权限：允许读与草稿，禁止高风险覆盖，若无显式成员则以默认只读/草稿权限运行
-    return { org, role: member?.role ?? 'agent_readonly' };
+    if (!member) throw new TenantAccessError('Agent 未加入该企业工作空间', 403, 'AGENT_MEMBERSHIP_REQUIRED');
+    return { org, role: member.role };
   }
 
   return { org, role: 'owner' };

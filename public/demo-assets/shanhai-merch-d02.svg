@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+  <rect width="600" height="800" fill="#F5F2EB"/>
+  <rect x="28" y="28" width="544" height="744" fill="#FCFBF8" stroke="#DFD9CB" stroke-width="2"/>
+  <rect x="110" y="340" width="170" height="230" rx="6" fill="#EBE6DA" stroke="#CFC8B8" stroke-width="2"/>
+  <path d="M135 410 Q195 380 255 410 M135 450 Q195 420 255 450 M135 490 Q195 460 255 490" fill="none" stroke="#4C7364" stroke-width="2.5" opacity="0.6"/>
+  <rect x="315" y="370" width="175" height="200" rx="6" fill="#E3EDE8" stroke="#8FA89B" stroke-width="2"/>
+  <circle cx="402" cy="450" r="36" fill="#B05B43" opacity="0.25"/>
+  <rect x="360" y="510" width="84" height="10" rx="3" fill="#183A30" opacity="0.35"/>
+  <text x="64" y="135" fill="#183A30" font-size="34" font-weight="600" font-family="sans-serif">挑一件有来处的文创</text>
+  <text x="64" y="180" fill="#53605A" font-size="18" font-family="sans-serif">纹样出处 · 材质手感 · 日常使用场景</text>
+  <rect x="64" y="212" width="76" height="4" fill="#B05B43"/>
+  <rect x="160" y="716" width="280" height="32" rx="4" fill="#EBE6DA"/>
+  <text x="300" y="737" text-anchor="middle" fill="#7C8781" font-size="13" font-family="sans-serif">概念示意 · 非在售实物实拍</text>
+</svg>

@@ -35,6 +35,19 @@ export function getTodayDashboard(organizationId: string) {
     .prepare('SELECT * FROM model_runs WHERE organization_id = ? ORDER BY created_at DESC LIMIT 8')
     .all(organizationId);
 
+  const draftMonitoring = db.prepare(`
+    SELECT pr.id, pr.topic, pub.published_url, pub.published_at,
+      (SELECT count(*) FROM performance_metrics m WHERE m.organization_id = pr.organization_id
+        AND m.publication_id = pub.id) AS snapshots
+    FROM content_projects pr
+    JOIN content_versions v ON v.id = pr.current_version_id AND v.organization_id = pr.organization_id
+    LEFT JOIN publications pub ON pub.id = (
+      SELECT p.id FROM publications p WHERE p.project_id = pr.id AND p.organization_id = pr.organization_id
+        ORDER BY p.published_at DESC, p.id DESC LIMIT 1
+    )
+    WHERE pr.organization_id = ? AND v.data_origin = 'external_agent'
+    ORDER BY pr.updated_at DESC
+  `).all(organizationId);
   const pendingReviewCount = projects.filter(
     (p) => p.review_status === 'pending_review' || p.review_status === 'draft'
   ).length;
@@ -54,6 +67,7 @@ export function getTodayDashboard(organizationId: string) {
     projects,
     knowledgeStats,
     workflowRuns,
+    draftMonitoring,
     modelRuns,
     providerStatuses: getProviderStatuses(organizationId),
   };

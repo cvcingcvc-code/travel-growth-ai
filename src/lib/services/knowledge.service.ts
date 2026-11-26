@@ -1,5 +1,5 @@
 import { getDb } from '../db/client';
-import { newId, requireOrgAccess, writeAuditLog } from '../db/tenant';
+import { newId, requireOrgAccess, writeAuditLog, type ActorContext } from '../db/tenant';
 import {
   computeDeterministicEmbedding,
   cosineSimilarity,
@@ -88,6 +88,7 @@ export function createKnowledgeDocument(params: {
   sourceRef?: string;
   verificationStatus?: 'verified' | 'unverified' | 'needs_review';
   isDemo?: boolean;
+  actor?: ActorContext;
 }) {
   requireOrgAccess(params.organizationId);
   if (params.sourceType === 'pdf_reserved' || params.sourceType === 'docx_reserved') {
@@ -115,6 +116,7 @@ export function createKnowledgeDocument(params: {
 
   writeAuditLog({
     organizationId: params.organizationId,
+    ...params.actor,
     action: 'knowledge.create',
     targetType: 'knowledge_document',
     targetId: id,
