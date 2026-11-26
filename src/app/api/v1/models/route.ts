@@ -7,6 +7,7 @@ import {
   getProviderStatuses,
   updateProviderConfig,
 } from '@/lib/providers/registry';
+import { getDailyUsageSummary } from '@/lib/providers/guard';
 import type { AICapability, AIProviderId } from '@/lib/providers/types';
 
 export async function GET(req: NextRequest) {
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest) {
     return ok({
       providers: getProviderStatuses(orgId),
       runs,
+      quota: getDailyUsageSummary(),
     });
   } catch (err) {
     return handleApiError(err);

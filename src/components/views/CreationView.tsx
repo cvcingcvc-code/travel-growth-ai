@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, Copy, FileText, Save, Sparkles, AlertTriangle } from 'lucide-react';
@@ -65,6 +65,66 @@ export function CreationView({ orgId }: { orgId: string }) {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState('');
+  const [imgPrompt, setImgPrompt] = useState('');
+  const [imgRatio, setImgRatio] = useState<'3:4' | '1:1' | '16:9'>('3:4');
+  const [imgLoading, setImgLoading] = useState(false);
+  const [extImgUrl, setExtImgUrl] = useState('');
+
+  async function handleRealImageGen() {
+    if (!selectedProjectId) return;
+    setImgLoading(true);
+    setNotice('');
+    try {
+      const res = await fetch('/api/v1/images/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-organization-id': orgId },
+        body: JSON.stringify({
+          prompt: imgPrompt || editCover || editTitle,
+          aspectRatio: imgRatio,
+          projectId: selectedProjectId,
+          slidePage: 1,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setNotice(`真实生图完成 (${json.data.model})，已自动保存至素材库并挂载到第 1 页！`);
+        await loadAll();
+      } else {
+        setNotice(`${json.error?.message} — ${json.error?.guidance || ''}`);
+      }
+    } finally {
+      setImgLoading(false);
+    }
+  }
+
+  async function handleAttachExternalImage() {
+    if (!selectedProjectId || !extImgUrl.trim()) return;
+    setImgLoading(true);
+    try {
+      const res = await fetch('/api/v1/images/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-organization-id': orgId },
+        body: JSON.stringify({
+          action: 'attach_external',
+          title: `${editTitle.slice(0, 18)} · 封面图`,
+          imageUrl: extImgUrl.trim(),
+          projectId: selectedProjectId,
+          slidePage: 1,
+          isAiGenerated: true,
+        }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setExtImgUrl('');
+        setNotice('已将外部宣传图保存至素材库并关联到当前内容第 1 页！');
+        await loadAll();
+      } else {
+        setNotice(json.error?.message || '挂载失败');
+      }
+    } finally {
+      setImgLoading(false);
+    }
+  }
 
   async function loadAll() {
     const sequence = ++loadSequence.current;
@@ -237,27 +297,27 @@ export function CreationView({ orgId }: { orgId: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-[#183a30]">AI 内容创作中心</h1>
-        <p className="text-xs text-[#53605a] mt-0.5">
+        <h1 className="text-xl font-semibold text-[#1d4ed8]">AI 内容创作中心</h1>
+        <p className="text-xs text-[#475569] mt-0.5">
           检索企业知识库生成选题、多标题、正文与多页图文方案；支持大尺寸实时编辑、多版本保存与人工审核。
         </p>
       </div>
 
       {notice && (
-        <div className="p-3 rounded bg-[#ebe6da] border border-[#d8cfb8] text-xs text-[#183a30]">{notice}</div>
+        <div className="p-3 rounded bg-[#f1f5f9] border border-[#cbd5e1] text-xs text-[#1d4ed8]">{notice}</div>
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
         {/* 左侧创作配置栏 (4列) */}
         <div className="xl:col-span-4 space-y-4">
-          <form onSubmit={handleGenerateFull} className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-[#183a30]">创作参数配置</h2>
+          <form onSubmit={handleGenerateFull} className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-[#1d4ed8]">创作参数配置</h2>
             <div>
-              <label className="block text-[11px] text-[#53605a] mb-1">文旅产品</label>
+              <label className="block text-[11px] text-[#475569] mb-1">文旅产品</label>
               <select
                 value={productId}
                 onChange={(e) => setProductId(e.target.value)}
-                className="w-full px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                className="w-full px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
               >
                 {products.length === 0 && <option value="">暂无产品（将基于企业简介创作）</option>}
                 {products.map((p) => (
@@ -269,11 +329,11 @@ export function CreationView({ orgId }: { orgId: string }) {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] text-[#53605a] mb-1">目标平台</label>
+                <label className="block text-[11px] text-[#475569] mb-1">目标平台</label>
                 <select
                   value={platform}
                   onChange={(e) => setPlatform(e.target.value)}
-                  className="w-full px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                  className="w-full px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
                 >
                   <option value="xiaohongshu">小红书图文</option>
                   <option value="douyin">抖音短视频脚本</option>
@@ -281,11 +341,11 @@ export function CreationView({ orgId }: { orgId: string }) {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] text-[#53605a] mb-1">参考策略卡片</label>
+                <label className="block text-[11px] text-[#475569] mb-1">参考策略卡片</label>
                 <select
                   value={strategyId}
                   onChange={(e) => setStrategyId(e.target.value)}
-                  className="w-full px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                  className="w-full px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
                 >
                   <option value="">不使用特定策略</option>
                   {strategies.map((s) => (
@@ -300,28 +360,28 @@ export function CreationView({ orgId }: { orgId: string }) {
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
               placeholder="目标客群"
-              className="w-full px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
             />
             <input
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               placeholder="营销目的"
-              className="w-full px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
             />
             <input
               value={style}
               onChange={(e) => setStyle(e.target.value)}
               placeholder="内容风格"
-              className="w-full px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+              className="w-full px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
             />
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] text-[#53605a]">营销选题（可留空自动生成或先点右侧灵感）</label>
+                <label className="text-[11px] text-[#475569]">营销选题（可留空自动生成或先点右侧灵感）</label>
                 <button
                   type="button"
                   onClick={handleGenerateTopics}
                   disabled={generating}
-                  className="text-[11px] text-[#4c7364] hover:underline"
+                  className="text-[11px] text-[#2563eb] hover:underline"
                 >
                   生成选题灵感
                 </button>
@@ -330,7 +390,7 @@ export function CreationView({ orgId }: { orgId: string }) {
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="输入或点击下方生成的选题..."
-                className="w-full px-2.5 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                className="w-full px-2.5 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
               />
             </div>
 
@@ -341,10 +401,10 @@ export function CreationView({ orgId }: { orgId: string }) {
                     key={idx}
                     type="button"
                     onClick={() => setTopic(t.topic)}
-                    className="w-full text-left p-2 rounded bg-[#f5f2eb] hover:bg-[#ebe6da] text-[11px] border border-[#e5dfd2]"
+                    className="w-full text-left p-2 rounded bg-[#f8fafc] hover:bg-[#f1f5f9] text-[11px] border border-[#e2e8f0]"
                   >
-                    <div className="font-medium text-[#183a30]">{t.topic}</div>
-                    <div className="text-[#7c8781]">{t.angle}</div>
+                    <div className="font-medium text-[#1d4ed8]">{t.topic}</div>
+                    <div className="text-[#64748b]">{t.angle}</div>
                   </button>
                 ))}
               </div>
@@ -353,7 +413,7 @@ export function CreationView({ orgId }: { orgId: string }) {
             <button
               type="submit"
               disabled={generating}
-              className="w-full py-2.5 rounded bg-[#183a30] hover:bg-[#214e41] text-white text-sm font-medium inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
+              className="w-full py-2.5 rounded bg-[#1d4ed8] hover:bg-[#1e40af] text-white text-sm font-medium inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
             >
               <Sparkles className="w-4 h-4" />
               {generating ? '正在检索知识库并创作...' : '生成文案与图文方案'}
@@ -361,20 +421,20 @@ export function CreationView({ orgId }: { orgId: string }) {
           </form>
 
           {/* 历史创作项目列表 */}
-          <div className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-2">
-            <div className="text-xs font-semibold text-[#183a30]">创作项目与草稿 ({projects.length})</div>
+          <div className="bg-[#ffffff] border border-[#e2e8f0] rounded p-4 space-y-2">
+            <div className="text-xs font-semibold text-[#1d4ed8]">创作项目与草稿 ({projects.length})</div>
             {projects.map((p) => (
               <button
                 key={p.id}
                 onClick={() => selectProject(p)}
                 className={`w-full text-left p-2.5 rounded text-xs border transition-colors ${
                   selectedProjectId === p.id
-                    ? 'bg-[#e3ede8] border-[#183a30]'
-                    : 'bg-[#f5f2eb] border-[#e5dfd2] hover:border-[#b5ad9b]'
+                    ? 'bg-[#eff6ff] border-[#1d4ed8]'
+                    : 'bg-[#f8fafc] border-[#e2e8f0] hover:border-[#b5ad9b]'
                 }`}
               >
-                <div className="font-medium text-[#1a2420] line-clamp-1">{p.topic}</div>
-                <div className="flex justify-between text-[11px] text-[#7c8781] mt-1">
+                <div className="font-medium text-[#0f172a] line-clamp-1">{p.topic}</div>
+                <div className="flex justify-between text-[11px] text-[#64748b] mt-1">
                   <span>{p.target_platform}</span>
                   <span>{p.review_status} · v{p.versions[0]?.version_number ?? 1}</span>
                 </div>
@@ -384,20 +444,20 @@ export function CreationView({ orgId }: { orgId: string }) {
         </div>
 
         {/* 右侧大尺寸编辑与图文预览区 (8列) */}
-        <div className="xl:col-span-8 bg-[#fcfbf8] border border-[#dfd9cb] rounded p-5 space-y-5">
+        <div className="xl:col-span-8 bg-[#ffffff] border border-[#e2e8f0] rounded p-5 space-y-5">
           {!activeProject || !latestVersion ? (
-            <div className="py-16 text-center text-sm text-[#7c8781]">
+            <div className="py-16 text-center text-sm text-[#64748b]">
               请在左侧配置参数并点击「生成文案与图文方案」，或选择一个已有草稿进行编辑。
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#ebe6da] pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f1f5f9] pb-3">
                 <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#183a30]" />
-                  <span className="text-sm font-semibold text-[#183a30]">
+                  <FileText className="w-4 h-4 text-[#1d4ed8]" />
+                  <span className="text-sm font-semibold text-[#1d4ed8]">
                     当前版本 v{latestVersion.version_number}
                   </span>
-                  <span className="px-2 py-0.5 text-[10px] rounded bg-[#ebe6da] text-[#53605a]">
+                  <span className="px-2 py-0.5 text-[10px] rounded bg-[#f1f5f9] text-[#475569]">
                     {latestVersion.data_origin === 'test_mode'
                       ? '测试模式生成'
                       : latestVersion.data_origin === 'demo'
@@ -406,28 +466,28 @@ export function CreationView({ orgId }: { orgId: string }) {
                       ? 'Codex 创作 · 演示企业'
                       : '真实保存'}
                   </span>
-                  <span className="px-2 py-0.5 text-[10px] rounded border border-[#dfd9cb] text-[#183a30]">
+                  <span className="px-2 py-0.5 text-[10px] rounded border border-[#e2e8f0] text-[#1d4ed8]">
                     审核状态：{activeProject.review_status}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={handleCopyAll}
-                    className="px-3 py-1.5 rounded border border-[#dfd9cb] text-xs inline-flex items-center gap-1 hover:bg-[#f5f2eb]"
+                    className="px-3 py-1.5 rounded border border-[#e2e8f0] text-xs inline-flex items-center gap-1 hover:bg-[#f8fafc]"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-[#4c7364]" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? <Check className="w-3.5 h-3.5 text-[#2563eb]" /> : <Copy className="w-3.5 h-3.5" />}
                     {copied ? '已复制' : '复制全文'}
                   </button>
                   <button
                     onClick={handleDownload}
-                    className="px-3 py-1.5 rounded border border-[#dfd9cb] text-xs hover:bg-[#f5f2eb]"
+                    className="px-3 py-1.5 rounded border border-[#e2e8f0] text-xs hover:bg-[#f8fafc]"
                   >
                     下载正文
                   </button>
                   <button
                     onClick={() => handleSaveDraft('draft')}
                     disabled={saving}
-                    className="px-3 py-1.5 rounded bg-[#183a30] text-white text-xs inline-flex items-center gap-1"
+                    className="px-3 py-1.5 rounded bg-[#1d4ed8] text-white text-xs inline-flex items-center gap-1"
                   >
                     <Save className="w-3.5 h-3.5" />
                     保存草稿
@@ -435,7 +495,7 @@ export function CreationView({ orgId }: { orgId: string }) {
                   <button
                     onClick={() => handleSaveDraft('pending_review')}
                     disabled={saving}
-                    className="px-3 py-1.5 rounded border border-[#183a30] text-[#183a30] text-xs hover:bg-[#ebe6da]"
+                    className="px-3 py-1.5 rounded border border-[#1d4ed8] text-[#1d4ed8] text-xs hover:bg-[#f1f5f9]"
                   >
                     提交人工审核
                   </button>
@@ -444,7 +504,7 @@ export function CreationView({ orgId }: { orgId: string }) {
 
               {/* 风险提示 */}
               {riskCheck.warnings && riskCheck.warnings.length > 0 && (
-                <div className="p-3 rounded bg-[#f4e5e1] border border-[#e3c3ba] text-xs text-[#8f422d] space-y-1">
+                <div className="p-3 rounded bg-[#fef2f2] border border-[#fecaca] text-xs text-[#b91c1c] space-y-1">
                   <div className="font-semibold flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5" /> 内容事实与合规提醒
                   </div>
@@ -457,14 +517,14 @@ export function CreationView({ orgId }: { orgId: string }) {
               {/* 备选标题切换 */}
               {titles.length > 0 && (
                 <div className="space-y-1.5">
-                  <div className="text-xs text-[#53605a]">候选标题方案（点击填入）：</div>
+                  <div className="text-xs text-[#475569]">候选标题方案（点击填入）：</div>
                   <div className="flex flex-wrap gap-2">
                     {titles.map((t, i) => (
                       <button
                         key={i}
                         type="button"
                         onClick={() => setEditTitle(t)}
-                        className="px-2.5 py-1 rounded bg-[#f5f2eb] hover:bg-[#ebe6da] border border-[#e5dfd2] text-xs text-left"
+                        className="px-2.5 py-1 rounded bg-[#f8fafc] hover:bg-[#f1f5f9] border border-[#e2e8f0] text-xs text-left"
                       >
                         {t}
                       </button>
@@ -476,83 +536,131 @@ export function CreationView({ orgId }: { orgId: string }) {
               {/* 大尺寸标题与正文编辑器 */}
               <div className="space-y-3">
                 <div>
-                  <label htmlFor="draft-title" className="block text-xs font-medium text-[#53605a] mb-1">主标题</label>
+                  <label htmlFor="draft-title" className="block text-xs font-medium text-[#475569] mb-1">主标题</label>
                   <input
                     id="draft-title"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-base font-medium rounded border border-[#dfd9cb] bg-white focus:outline-none focus:border-[#183a30]"
+                    className="w-full px-3.5 py-2.5 text-base font-medium rounded border border-[#e2e8f0] bg-white focus:outline-none focus:border-[#1d4ed8]"
                   />
                 </div>
                 <div>
-                  <label htmlFor="draft-body" className="block text-xs font-medium text-[#53605a] mb-1">发布正文（可直接编辑并保存新版本）</label>
+                  <label htmlFor="draft-body" className="block text-xs font-medium text-[#475569] mb-1">发布正文（可直接编辑并保存新版本）</label>
                   <textarea
                     rows={10}
                     id="draft-body"
                     value={editBody}
                     onChange={(e) => setEditBody(e.target.value)}
-                    className="w-full px-3.5 py-3 text-sm leading-relaxed rounded border border-[#dfd9cb] bg-white focus:outline-none focus:border-[#183a30]"
+                    className="w-full px-3.5 py-3 text-sm leading-relaxed rounded border border-[#e2e8f0] bg-white focus:outline-none focus:border-[#1d4ed8]"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#53605a] mb-1">封面设计说明</label>
+                    <label className="block text-xs font-medium text-[#475569] mb-1">封面设计说明</label>
                     <textarea
                       rows={2}
                       value={editCover}
                       onChange={(e) => setEditCover(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                      className="w-full px-3 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#53605a] mb-1">转化引导 (CTA)</label>
+                    <label className="block text-xs font-medium text-[#475569] mb-1">转化引导 (CTA)</label>
                     <textarea
                       rows={2}
                       value={editCta}
                       onChange={(e) => setEditCta(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded border border-[#dfd9cb] bg-white"
+                      className="w-full px-3 py-2 text-xs rounded border border-[#e2e8f0] bg-white"
                     />
                   </div>
                 </div>
               </div>
 
-              {hashtags.length > 0 && <div className="text-xs text-[#4c7364]">{hashtags.join(' ')}</div>}
+              {hashtags.length > 0 && <div className="text-xs text-[#2563eb]">{hashtags.join(' ')}</div>}
+
+              {/* 真实文生图与外部图挂载面板（绝不伪造生图成功） */}
+              <div className="p-3.5 rounded-md bg-[#f8fafc] border border-[#e2e8f0] space-y-2.5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-semibold text-[#0f172a]">视觉与生图工作栏（文生图 API / 外部图上传挂载）</span>
+                  <select
+                    value={imgRatio}
+                    onChange={(e) => setImgRatio(e.target.value as '3:4' | '1:1' | '16:9')}
+                    className="px-2 py-1 rounded border border-[#e2e8f0] bg-white text-[11px]"
+                  >
+                    <option value="3:4">3:4 小红书竖版</option>
+                    <option value="1:1">1:1 方形海报</option>
+                    <option value="16:9">16:9 横版封面</option>
+                  </select>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={imgPrompt}
+                    onChange={(e) => setImgPrompt(e.target.value)}
+                    placeholder="输入生图提示词（留空则使用当前封面设计说明）"
+                    className="flex-1 px-2.5 py-1.5 rounded border border-[#e2e8f0] bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRealImageGen}
+                    disabled={imgLoading}
+                    className="px-3 py-1.5 rounded bg-[#1d4ed8] text-white font-medium shrink-0 disabled:opacity-60"
+                  >
+                    {imgLoading ? '请求中...' : '调用真实生图 API'}
+                  </button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={extImgUrl}
+                    onChange={(e) => setExtImgUrl(e.target.value)}
+                    placeholder="或粘贴外部已生成宣传图 URL（如 /demo-assets/spruce-cabin.jpg）挂载到 P1"
+                    className="flex-1 px-2.5 py-1.5 rounded border border-[#e2e8f0] bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAttachExternalImage}
+                    disabled={imgLoading || !extImgUrl.trim()}
+                    className="px-3 py-1.5 rounded bg-[#0f172a] text-white shrink-0 disabled:opacity-50"
+                  >
+                    挂载宣传图到 P1
+                  </button>
+                </div>
+              </div>
 
               {/* 多页图文创作方案 */}
               {carousel.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-[#ebe6da]">
-                  <div className="text-xs font-semibold text-[#183a30]">多页图文分镜方案 ({carousel.length} 页)</div>
+                <div className="space-y-2 pt-2 border-t border-[#f1f5f9]">
+                  <div className="text-xs font-semibold text-[#1d4ed8]">多页图文分镜方案 ({carousel.length} 页)</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {carousel.map((slide) => (
-                      <div key={slide.page} className="p-3 rounded bg-[#f5f2eb] border border-[#e5dfd2] text-xs space-y-1">
-                        <div className="font-semibold text-[#183a30]">P{slide.page} · {slide.title}</div>
+                      <div key={slide.page} className="p-3 rounded bg-[#f8fafc] border border-[#e2e8f0] text-xs space-y-1">
+                        <div className="font-semibold text-[#1d4ed8]">P{slide.page} · {slide.title}</div>
                         {slide.imageUrl?.startsWith('/demo-assets/') ? (
                           <>
                             <a href={slide.imageUrl} target="_blank" rel="noreferrer">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={slide.imageUrl} alt={`第 ${slide.page} 页成品 · ${slide.title}`}
-                                width={1080} height={1440} className="w-full h-auto rounded border border-[#dfd9cb]" />
+                                width={1080} height={1440} className="w-full h-auto rounded border border-[#e2e8f0]" />
                             </a>
                             <a href={slide.imageUrl} download className="block text-[#31594b] underline">下载第 {slide.page} 页 PNG</a>
                           </>
                         ) : (
-                          <div className="aspect-[3/4] p-3.5 rounded bg-[#fcfbf8] border border-[#dfd9cb] flex flex-col justify-between">
+                          <div className="aspect-[3/4] p-3.5 rounded bg-[#ffffff] border border-[#e2e8f0] flex flex-col justify-between">
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between text-[10px] text-[#4c7364]">
+                              <div className="flex items-center justify-between text-[10px] text-[#2563eb]">
                                 <span>PAGE {slide.page}</span>
-                                <span className="px-1.5 py-0.5 rounded bg-[#e3ede8] text-[#183a30]">3:4 概念排版</span>
+                                <span className="px-1.5 py-0.5 rounded bg-[#eff6ff] text-[#1d4ed8]">3:4 概念排版</span>
                               </div>
-                              <div className="w-6 h-0.5 bg-[#b48446]" />
-                              <div className="text-xs font-semibold text-[#183a30] leading-snug">{slide.title}</div>
-                              <div className="text-[11px] text-[#53605a] leading-relaxed">{slide.copy}</div>
+                              <div className="w-6 h-0.5 bg-[#2563eb]" />
+                              <div className="text-xs font-semibold text-[#1d4ed8] leading-snug">{slide.title}</div>
+                              <div className="text-[11px] text-[#475569] leading-relaxed">{slide.copy}</div>
                             </div>
-                            <div className="text-[10px] text-center py-1 rounded bg-[#ebe6da] text-[#7c8781]">
+                            <div className="text-[10px] text-center py-1 rounded bg-[#f1f5f9] text-[#64748b]">
                               概念示意 · 非真实景区实景
                             </div>
                           </div>
                         )}
-                        <div className="text-[11px] text-[#4c7364]">画面：{slide.visual}</div>
-                        <div className="text-[#53605a]">{slide.copy}</div>
+                        <div className="text-[11px] text-[#2563eb]">画面：{slide.visual}</div>
+                        <div className="text-[#475569]">{slide.copy}</div>
                       </div>
                     ))}
                   </div>
@@ -560,17 +668,17 @@ export function CreationView({ orgId }: { orgId: string }) {
               )}
 
               {/* 企业知识引用溯源 */}
-              <div className="pt-2 border-t border-[#ebe6da]">
-                <div className="text-xs font-semibold text-[#183a30] mb-1.5">企业知识引用溯源 ({citations.length})</div>
+              <div className="pt-2 border-t border-[#f1f5f9]">
+                <div className="text-xs font-semibold text-[#1d4ed8] mb-1.5">企业知识引用溯源 ({citations.length})</div>
                 {citations.length === 0 ? (
-                  <div className="text-xs text-[#7c8781]">未检索到相关企业知识文档。</div>
+                  <div className="text-xs text-[#64748b]">未检索到相关企业知识文档。</div>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {citations.map((c, i) => (
                       <span
                         key={i}
                         title={c.documentId}
-                        className="px-2.5 py-1 rounded bg-[#e3ede8] text-[#183a30] text-[11px]"
+                        className="px-2.5 py-1 rounded bg-[#eff6ff] text-[#1d4ed8] text-[11px]"
                       >
                         [{c.category}] {c.title} ({c.verificationStatus === 'verified' ? '已核实' : '待核实'})
                       </span>

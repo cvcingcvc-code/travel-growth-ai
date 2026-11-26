@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { getDb } from './client';
 import { tokenizeForSearch, computeDeterministicEmbedding } from '../utils/text';
 import { importShanhaiShiguangDemo } from './import-shanhai';
+import { seedSpruceValleyDemo } from './seed-spruce';
 
 export function seedDatabaseIfEmpty(force = false) {
   const db = getDb();
@@ -418,6 +419,7 @@ export function seedDatabaseIfEmpty(force = false) {
   `).run(org1Id);
 
   importShanhaiShiguangDemo();
+  seedSpruceValleyDemo();
 
   return { seeded: true };
 }

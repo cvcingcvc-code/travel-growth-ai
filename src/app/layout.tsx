@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'TravelGrowth AI — 文旅内容营销智能工作台',
-  description: '面向景区、民宿、旅游企业与文化传播机构的智能内容营销工作台',
+  title: 'TravelGrowth AI 2.0 — 企业专属 AI 营销运营工作台',
+  description: '企业入驻、知识库构建、专属营销 Agent、同行爆款分析、营销方案、内容生产与数据复盘闭环工作台',
 };
 
 export default function RootLayout({
@@ -13,7 +13,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="min-h-screen bg-[#f5f2eb] text-[#1a2420] antialiased">
+      <head>
+        <link
+          rel="preload"
+          as="image"
+          href="/images/hero/hero-01-waterfront-park.webp"
+          type="image/webp"
+        />
+      </head>
+      <body className="min-h-screen bg-[#f8fafc] text-[#0f172a] antialiased">
         {children}
       </body>
     </html>

@@ -177,11 +177,14 @@ CREATE TABLE IF NOT EXISTS assets (
   id TEXT PRIMARY KEY,
   organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
-  category TEXT NOT NULL DEFAULT 'real_scenic', -- real_scenic | brand_material | product_photo | poster | document | ai_concept
+  category TEXT NOT NULL DEFAULT 'real_scenic', -- real_scenic | brand_material | product_photo | poster | document | ai_concept | reference_material
   file_url TEXT NOT NULL DEFAULT '',
   mime_type TEXT NOT NULL DEFAULT 'image/jpeg',
   source_origin TEXT NOT NULL DEFAULT '',
-  copyright_status TEXT NOT NULL DEFAULT 'owned', -- owned | licensed | pending_verification | ai_generated_concept
+  copyright_status TEXT NOT NULL DEFAULT 'owned', -- owned | licensed | pending_verification | ai_generated_concept | reference_only
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+  is_favorite INTEGER NOT NULL DEFAULT 0,
   is_ai_generated INTEGER NOT NULL DEFAULT 0,
   is_demo INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -308,6 +311,96 @@ CREATE TABLE IF NOT EXISTS provider_configs (
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(organization_id, capability)
 );
+
+-- 20. 企业专属营销 Agent 持久化配置（TravelGrowth AI 2.0）
+CREATE TABLE IF NOT EXISTS organization_agents (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE,
+  agent_name TEXT NOT NULL,
+  company_background TEXT NOT NULL DEFAULT '',
+  brand_rules TEXT NOT NULL DEFAULT '',
+  product_customer_profile TEXT NOT NULL DEFAULT '',
+  marketing_goals TEXT NOT NULL DEFAULT '',
+  enabled_tools_json TEXT NOT NULL DEFAULT '[]',
+  kb_permissions_json TEXT NOT NULL DEFAULT '[]',
+  review_rules_json TEXT NOT NULL DEFAULT '[]',
+  logical_roles_json TEXT NOT NULL DEFAULT '[]',
+  experience_memory_json TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'ready', -- ready | running | paused
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 21. Agent 真实执行步骤与工具调用日志（可视化用，绝不伪造静态动画）
+CREATE TABLE IF NOT EXISTS agent_execution_steps (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  run_id TEXT NOT NULL,
+  step_index INTEGER NOT NULL,
+  role_name TEXT NOT NULL, -- 总控 Agent | 市场调研 Agent | 爆款分析 Agent | 营销策划 Agent | 文案 Agent | 视觉 Agent | 合规审核 Agent | 数据复盘 Agent
+  tool_name TEXT NOT NULL,
+  input_summary TEXT NOT NULL DEFAULT '',
+  output_summary TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'completed', -- running | completed | failed
+  error_message TEXT NOT NULL DEFAULT '',
+  duration_ms INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 22. 自动营销方案（7天/30天计划、审批、版本管理，关联产品与内容）
+CREATE TABLE IF NOT EXISTS marketing_campaigns (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+  version_number INTEGER NOT NULL DEFAULT 1,
+  title TEXT NOT NULL,
+  marketing_goal TEXT NOT NULL DEFAULT '',
+  target_audience_needs TEXT NOT NULL DEFAULT '',
+  differentiated_selling_points TEXT NOT NULL DEFAULT '',
+  topic_pool_json TEXT NOT NULL DEFAULT '[]',
+  platform_strategy_json TEXT NOT NULL DEFAULT '{}',
+  plan_7d_json TEXT NOT NULL DEFAULT '[]',
+  plan_30d_json TEXT NOT NULL DEFAULT '[]',
+  visual_direction TEXT NOT NULL DEFAULT '',
+  video_direction TEXT NOT NULL DEFAULT '',
+  conversion_guide TEXT NOT NULL DEFAULT '',
+  required_assets_and_unverified_json TEXT NOT NULL DEFAULT '[]',
+  approval_status TEXT NOT NULL DEFAULT 'draft', -- draft | pending_approval | approved | archived
+  data_origin TEXT NOT NULL DEFAULT 'real',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 23. 企业社交媒体账号管理（小红书/抖音/公众号/视频号）
+CREATE TABLE IF NOT EXISTS social_accounts (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  platform TEXT NOT NULL, -- xiaohongshu | douyin | wechat_oa | wechat_channels | general
+  account_name TEXT NOT NULL,
+  account_handle TEXT NOT NULL DEFAULT '',
+  auth_status TEXT NOT NULL DEFAULT 'manual_only', -- authorized | manual_only | not_connected
+  followers_count INTEGER NOT NULL DEFAULT 0,
+  last_synced_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 24. 复盘洞察与知识回流记录
+CREATE TABLE IF NOT EXISTS review_insights (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  sample_size INTEGER NOT NULL DEFAULT 0,
+  title_finding TEXT NOT NULL DEFAULT '',
+  cover_finding TEXT NOT NULL DEFAULT '',
+  topic_finding TEXT NOT NULL DEFAULT '',
+  weak_strategy_finding TEXT NOT NULL DEFAULT '',
+  next_round_actions_json TEXT NOT NULL DEFAULT '[]',
+  sample_warning TEXT NOT NULL DEFAULT '',
+  synced_to_kb_doc_id TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_steps_org ON agent_execution_steps(organization_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_campaigns_org ON marketing_campaigns(organization_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_social_accounts_org ON social_accounts(organization_id);
 
 CREATE INDEX IF NOT EXISTS idx_products_org ON products(organization_id);
 CREATE INDEX IF NOT EXISTS idx_intelligence_org ON intelligence_items(organization_id, collected_at DESC);

@@ -1,8 +1,19 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, BookOpen, CheckCircle2, Clock, Cpu, Radar, Sparkles, Layers } from 'lucide-react';
-import type { NavTab } from '../AppShell';
+import {
+  ArrowRight,
+  Bot,
+  CheckCircle2,
+  Compass,
+  FileText,
+  Layers,
+  Radar,
+  Send,
+  Sparkles,
+  Target,
+} from 'lucide-react';
+import { useWorkspaceScenicTheme, type NavTab } from '../AppShell';
 import { SYSTEM_CAPABILITY_MATRIX } from '@/lib/demo/demo-mode';
 
 interface DashboardData {
@@ -15,13 +26,9 @@ interface DashboardData {
     pendingReviewCount: number;
   };
   intelligenceItems: Array<{ id: string; title: string; category: string; source_name: string; collected_at: string; is_demo: number }>;
-  strategies: Array<{ id: string; title: string; target_platform: string; hook_pattern: string; is_demo: number }>;
   projects: Array<{ id: string; topic: string; review_status: string; target_platform: string; updated_at: string; is_demo: number }>;
-  workflowRuns: Array<{ id: string; workflow_name: string; status: string; summary: string; created_at: string }>;
-  draftMonitoring: Array<{ id: string; topic: string; published_url: string | null; published_at: string | null; snapshots: number }>;
   knowledgeStats: Array<{ category: string; count: number; verified_count: number }>;
   providerStatuses: Array<{ capability: string; provider: string; modelName: string; status: string; statusNote: string }>;
-  modelRuns: Array<{ id: string; task_type: string; provider: string; model_name: string; status: string; duration_ms: number; created_at: string }>;
 }
 
 export function TodayView({
@@ -33,255 +40,257 @@ export function TodayView({
   loading: boolean;
   onNavigate: (tab: NavTab) => void;
 }) {
+  const { theme } = useWorkspaceScenicTheme();
+
   if (loading || !data) {
     return (
-      <div className="p-8 text-center text-sm text-[#53605a] bg-[#fcfbf8] border border-[#dfd9cb] rounded">
-        正在加载今日工作台数据...
+      <div className="p-10 text-center text-xs text-[#475569] bg-white border border-white/80 rounded-2xl">
+        正在加载企业营销工作台...
       </div>
     );
   }
 
-  const statCards = [
-    { label: '市场情报条目', value: data.summary.intelligenceCount, action: () => onNavigate('intelligence'), hint: '去采集/导入' },
-    { label: '爆款案例与策略', value: `${data.summary.casesCount} / ${data.summary.strategiesCount}`, action: () => onNavigate('analysis'), hint: '拆解案例' },
-    { label: '创作项目总数', value: data.summary.projectsCount, action: () => onNavigate('creation'), hint: '进入创作' },
-    { label: '待人工审核', value: data.summary.pendingReviewCount, action: () => onNavigate('creation'), hint: '立即审核' },
-  ];
-
   const textModel = data.providerStatuses.find((p) => p.capability === 'text');
+  const totalKnowledgeCount = data.knowledgeStats.reduce((s, k) => s + k.count, 0);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-[#183a30]">今日文旅营销工作台</h1>
-          <p className="text-xs text-[#53605a] mt-0.5">
-            闭环链路：市场情报 → 爆款拆解 → 知识库检索 → AI 创作 → 人工审核 → 复盘沉淀
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => onNavigate('intelligence')}
-            className="px-3 py-1.5 rounded border border-[#183a30] text-[#183a30] text-xs font-medium hover:bg-[#ebe6da]"
-          >
-            + 录入市场情报
-          </button>
-          <button
-            onClick={() => onNavigate('creation')}
-            className="px-3.5 py-1.5 rounded bg-[#183a30] text-[#fcfbf8] text-xs font-medium hover:bg-[#214e41] inline-flex items-center gap-1.5"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>从知识库发起创作</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 顶部核心数字 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((c) => (
+      {/* 顶部沉浸式文旅风光总控横幅（与工作台当前风光主题实时联动） */}
+      <section className="relative rounded-3xl overflow-hidden border border-white/75 shadow-[0_18px_45px_rgba(15,23,42,0.12)] min-h-[220px] flex flex-col justify-between p-6 sm:p-8 bg-[#0f172a]">
+        {/* 全铺满背景图 */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={theme.src}
+            alt={theme.fullLabel}
+            className="w-full h-full object-cover object-center transition-all duration-700"
+          />
           <div
-            key={c.label}
-            onClick={c.action}
-            className="cursor-pointer bg-[#fcfbf8] border border-[#dfd9cb] hover:border-[#183a30] rounded p-4 transition-colors"
-          >
-            <div className="text-xs text-[#53605a]">{c.label}</div>
-            <div className="text-2xl font-semibold text-[#183a30] mt-1">{c.value}</div>
-            <div className="text-[11px] text-[#4c7364] mt-2 inline-flex items-center gap-1">
-              <span>{c.hint}</span>
-              <ArrowRight className="w-3 h-3" />
-            </div>
-          </div>
-        ))}
-      </div>
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(108deg, rgba(15, 23, 42, 0.68) 0%, rgba(15, 23, 42, 0.36) 56%, rgba(15, 23, 42, 0.16) 100%)',
+            }}
+          />
+        </div>
 
-      {/* 中部三栏：情报 + 创作与待审核 + 知识库与模型状态 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* 今日市场情报与策略 */}
-        <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-[#ebe6da] pb-2">
-            <h2 className="text-sm font-semibold text-[#183a30] flex items-center gap-1.5">
-              <Radar className="w-4 h-4 text-[#4c7364]" />
-              今日市场情报与热点
-            </h2>
-            <button onClick={() => onNavigate('intelligence')} className="text-xs text-[#4c7364] hover:underline">
-              全部
+        {/* 上半部：企业与场景徽标 + 标题 + 磨砂快捷入口 */}
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+          <div className="space-y-2.5 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/18 backdrop-blur-md border border-white/30 text-white text-[11px] font-medium">
+              <Compass className="w-3.5 h-3.5 text-sky-200" />
+              <span>{data.organization.name}</span>
+              <span className="text-white/50">·</span>
+              <span className="text-white/85">{theme.fullLabel}</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight hero-text-shadow">
+              今日营销任务与成果总览
+            </h1>
+            <p className="text-xs sm:text-sm text-white/90 leading-relaxed hero-subtext-shadow">
+              全链路闭环：企业入驻 → 知识库 → 专属 Agent → 市场情报 → 营销方案 → 内容生产 → 发布包 → 数据复盘
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2.5 shrink-0">
+            <button
+              onClick={() => onNavigate('agent')}
+              className="px-3.5 py-2 rounded-xl bg-white/18 hover:bg-white/28 backdrop-blur-md border border-white/35 text-white text-xs font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Bot className="w-3.5 h-3.5 text-sky-200" /> 专属 Agent
+            </button>
+            <button
+              onClick={() => onNavigate('campaigns')}
+              className="px-3.5 py-2 rounded-xl bg-white/18 hover:bg-white/28 backdrop-blur-md border border-white/35 text-white text-xs font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Target className="w-3.5 h-3.5 text-sky-200" /> 营销方案
+            </button>
+            <button
+              onClick={() => onNavigate('creation')}
+              className="px-4 py-2 rounded-xl bg-[#1d4ed8]/85 hover:bg-[#1d4ed8] backdrop-blur-md border border-white/35 text-white text-xs font-medium inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> 发起内容生产
             </button>
           </div>
-          {data.intelligenceItems.length === 0 ? (
-            <div className="text-xs text-[#7c8781] py-6 text-center">暂无情报，请前往情报中心录入或导入。</div>
-          ) : (
-            <ul className="space-y-2.5">
-              {data.intelligenceItems.map((item) => (
-                <li key={item.id} className="p-2.5 rounded bg-[#f5f2eb] border border-[#e5dfd2]">
-                  <div className="text-xs font-medium text-[#1a2420] line-clamp-1">{item.title}</div>
-                  <div className="flex items-center justify-between text-[11px] text-[#7c8781] mt-1">
-                    <span>{item.source_name}</span>
-                    {item.is_demo ? <span className="text-[#b48446]">演示</span> : <span>真实</span>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        </div>
 
-        {/* 创作任务与待审核 */}
-        <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-          <div className="flex items-center justify-between border-b border-[#ebe6da] pb-2">
-            <h2 className="text-sm font-semibold text-[#183a30] flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-[#b48446]" />
-              创作任务与待审核内容
+        {/* 下半部：4 枚实时业务状态磨砂胶囊 */}
+        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-5 mt-2">
+          {[
+            { label: '企业知识文档', value: `${totalKnowledgeCount} 篇`, tab: 'knowledge' as NavTab },
+            { label: '市场对标情报', value: `${data.summary.intelligenceCount} 条`, tab: 'intelligence' as NavTab },
+            { label: '已产出营销稿件', value: `${data.summary.projectsCount} 篇`, tab: 'creation' as NavTab },
+            { label: '待人工审核', value: `${data.summary.pendingReviewCount} 项`, tab: 'publish' as NavTab },
+          ].map((stat) => (
+            <button
+              key={stat.label}
+              onClick={() => onNavigate(stat.tab)}
+              className="px-3.5 py-2.5 rounded-2xl bg-white/16 hover:bg-white/26 backdrop-blur-md border border-white/30 text-left transition-all cursor-pointer"
+            >
+              <div className="text-[11px] text-white/80">{stat.label}</div>
+              <div className="text-base sm:text-lg font-semibold text-white mt-0.5 hero-subtext-shadow">{stat.value}</div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* 端到端业务闭环快捷通道（磨砂玻璃面板） */}
+      <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3.5">
+          <div className="text-xs font-semibold text-[#0f172a]">核心业务任务链路（点击进入对应环节）</div>
+          <span className="text-[11px] text-[#64748b]">数据实时贯通 · 支持任意环节切入</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs">
+          {[
+            { step: '01', label: '企业与知识库', tab: 'knowledge' as NavTab, count: `${totalKnowledgeCount} 篇` },
+            { step: '02', label: '产品与素材', tab: 'products' as NavTab, count: '画廊资产' },
+            { step: '03', label: '专属 Agent', tab: 'agent' as NavTab, count: '8 角色就绪' },
+            { step: '04', label: '市场与爆款', tab: 'intelligence' as NavTab, count: `${data.summary.intelligenceCount} 情报` },
+            { step: '05', label: '营销方案', tab: 'campaigns' as NavTab, count: '7/30天计划' },
+            { step: '06', label: '内容与生图', tab: 'creation' as NavTab, count: `${data.summary.projectsCount} 稿件` },
+            { step: '07', label: '发布与复盘', tab: 'publish' as NavTab, count: `${data.summary.pendingReviewCount} 待审` },
+          ].map((item) => (
+            <button
+              key={item.step}
+              onClick={() => onNavigate(item.tab)}
+              className="group p-3 rounded-xl bg-[#f8fafc] hover:bg-white/95 border border-[#e2e8f0] hover:border-[#93c5fd] text-left transition-all shadow-2xs cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-[#1d4ed8]">STEP {item.step}</span>
+                <ArrowRight className="w-3 h-3 text-[#94a3b8] group-hover:text-[#1d4ed8] group-hover:translate-x-0.5 transition-all" />
+              </div>
+              <div className="font-medium text-[#0f172a] mt-1">{item.label}</div>
+              <div className="text-[11px] text-[#64748b] mt-1">{item.count}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 两栏核心成果：待审核与最新内容成果 + 最新市场情报与系统状态 */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <section className="lg:col-span-7 bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-3.5">
+          <div className="flex items-center justify-between border-b border-[#e2e8f0]/75 pb-3">
+            <h2 className="text-sm font-semibold text-[#0f172a] flex items-center gap-1.5">
+              <FileText className="w-4 h-4 text-[#1d4ed8]" />
+              近期内容成果与待审核稿件 ({data.projects.length})
             </h2>
-            <button onClick={() => onNavigate('creation')} className="text-xs text-[#4c7364] hover:underline">
-              进入工作台
+            <button
+              onClick={() => onNavigate('publish')}
+              className="text-xs text-[#1d4ed8] hover:underline inline-flex items-center gap-1 cursor-pointer"
+            >
+              前往发布中心 <ArrowRight className="w-3 h-3" />
             </button>
           </div>
           {data.projects.length === 0 ? (
-            <div className="text-xs text-[#7c8781] py-6 text-center">当前企业尚无创作草稿，点击右上角发起创作。</div>
+            <div className="py-10 text-center text-xs text-[#64748b]">
+              暂无内容稿件，点击右上角「发起内容生产」开始创作。
+            </div>
           ) : (
-            <ul className="space-y-2.5">
+            <div className="space-y-2.5">
               {data.projects.map((p) => (
-                <li key={p.id} className="p-2.5 rounded bg-[#f5f2eb] border border-[#e5dfd2] flex items-start justify-between gap-2">
+                <div
+                  key={p.id}
+                  onClick={() => onNavigate('publish')}
+                  className="cursor-pointer p-3.5 rounded-xl bg-[#f8fafc] hover:bg-white/95 border border-[#e2e8f0] hover:border-[#93c5fd] flex items-center justify-between gap-3 transition-all"
+                >
                   <div className="min-w-0">
-                    <div className="text-xs font-medium text-[#1a2420] truncate">{p.topic}</div>
-                    <div className="text-[11px] text-[#7c8781] mt-1">平台：{p.target_platform}</div>
+                    <div className="text-xs font-medium text-[#0f172a] truncate">{p.topic}</div>
+                    <div className="text-[11px] text-[#64748b] mt-0.5">
+                      平台：{p.target_platform} · 更新于 {p.updated_at}
+                    </div>
                   </div>
-                  <span className="shrink-0 px-2 py-0.5 text-[10px] rounded bg-[#fcfbf8] border border-[#dfd9cb] text-[#53605a]">
+                  <span
+                    className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-medium ${
+                      p.review_status === 'published_recorded'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                        : 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                    }`}
+                  >
                     {p.review_status}
                   </span>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </section>
 
-        {/* 知识库与模型任务状态 */}
-        <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-4">
-          <div>
-            <div className="flex items-center justify-between border-b border-[#ebe6da] pb-2 mb-2">
-              <h2 className="text-sm font-semibold text-[#183a30] flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-[#4c7364]" />
-                六类知识库状态
+        <section className="lg:col-span-5 space-y-5">
+          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-[#e2e8f0]/75 pb-2.5">
+              <h2 className="text-sm font-semibold text-[#0f172a] flex items-center gap-1.5">
+                <Radar className="w-4 h-4 text-[#1d4ed8]" /> 最新市场情报与对标
               </h2>
-              <button onClick={() => onNavigate('knowledge')} className="text-xs text-[#4c7364] hover:underline">
-                管理
+              <button
+                onClick={() => onNavigate('intelligence')}
+                className="text-xs text-[#1d4ed8] hover:underline cursor-pointer"
+              >
+                查看全部
               </button>
             </div>
-            {data.knowledgeStats.length === 0 ? (
-              <div className="text-xs text-[#7c8781] py-2">暂无知识文档，建议先补充 A/B/C 类核心资料。</div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {data.knowledgeStats.map((k) => (
-                  <div key={k.category} className="p-2 rounded bg-[#f5f2eb] text-xs">
-                    <div className="text-[#53605a] text-[11px]">{k.category}</div>
-                    <div className="font-medium text-[#183a30] mt-0.5">
-                      {k.count} 篇（已核实 {k.verified_count}）
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between border-b border-[#ebe6da] pb-2 mb-2">
-              <h2 className="text-sm font-semibold text-[#183a30] flex items-center gap-1.5">
-                <Cpu className="w-4 h-4 text-[#4c7364]" />
-                模型与系统运行状态
-              </h2>
-              <button onClick={() => onNavigate('models')} className="text-xs text-[#4c7364] hover:underline">
-                配置
-              </button>
-            </div>
-            <div className="p-2.5 rounded bg-[#f5f2eb] border border-[#e5dfd2] text-xs space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">文本模型：{textModel?.provider} / {textModel?.modelName}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[10px] ${textModel?.status === 'connected' ? 'bg-[#e3ede8] text-[#183a30]' : 'bg-[#ebe6da] text-[#8a6534]'}`}>
-                  {textModel?.status === 'connected' ? '真实已接通' : textModel?.status === 'test_mode_ready' ? '测试模式' : '未配置'}
-                </span>
-              </div>
-              <div className="text-[11px] text-[#53605a]">{textModel?.statusNote}</div>
-            </div>
-            {data.modelRuns.slice(0, 2).map((r) => (
-              <div key={r.id} className="mt-2 flex items-center justify-between text-[11px] text-[#53605a]">
-                <span className="inline-flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-[#4c7364]" />
-                  {r.task_type} ({r.status})
-                </span>
-                <span>{r.duration_ms}ms</span>
+            {data.intelligenceItems.slice(0, 4).map((item) => (
+              <div key={item.id} className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs">
+                <div className="font-medium text-[#0f172a] line-clamp-1">{item.title}</div>
+                <div className="text-[11px] text-[#64748b] mt-0.5">{item.source_name}</div>
               </div>
             ))}
+          </div>
+
+          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-3 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-[#0f172a] flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> 模型与合规状态
+              </span>
+              <button onClick={() => onNavigate('settings')} className="text-[#1d4ed8] hover:underline cursor-pointer">
+                系统设置
+              </button>
+            </div>
+            <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
+              <div className="flex justify-between items-center gap-2">
+                <span className="font-medium text-[#0f172a]">
+                  文本模型：{textModel?.provider} / {textModel?.modelName}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 text-[10px] shrink-0">
+                  {textModel?.status === 'connected' ? '真实密钥' : '测试模式'}
+                </span>
+              </div>
+              <div className="text-[11px] text-[#64748b] mt-1">{textModel?.statusNote}</div>
+            </div>
+            <button
+              onClick={() => onNavigate('review')}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#1d4ed8]/90 to-[#2563eb]/90 hover:from-[#1e40af] hover:to-[#1d4ed8] text-white font-medium inline-flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+            >
+              <Send className="w-3.5 h-3.5" /> 进入数据复盘与知识回流
+            </button>
           </div>
         </section>
       </div>
 
-      {data.workflowRuns.length > 0 && (
-        <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-[#183a30]">智能体执行记录</h2>
-          {data.workflowRuns.map((run) => (
-            <div key={run.id} className="rounded bg-[#f5f2eb] p-3 text-xs space-y-1">
-              <div className="font-semibold text-[#183a30]">{run.workflow_name} · {run.status}</div>
-              <p className="whitespace-pre-wrap text-[#53605a]">{run.summary}</p>
-              <div className="text-[#53605a]">{run.id} · {run.created_at} UTC</div>
-            </div>
-          ))}
-        </section>
-      )}
-
-      {data.draftMonitoring.length > 0 && (
-        <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-[#183a30]">运营复盘 · 真实数据</h2>
-          <p className="text-xs text-[#53605a]">模拟数据未录入。真实数据在人工记录发布后采集。</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-[#53605a]">
-              <thead><tr><th className="p-2">草稿</th><th className="p-2">发布时间及链接</th><th className="p-2">采集指标</th>
-                <th className="p-2">24 小时</th><th className="p-2">72 小时</th><th className="p-2">7 天</th></tr></thead>
-              <tbody>{data.draftMonitoring.map((draft) => (
-                <tr key={draft.id} className="border-t border-[#dfd9cb]">
-                  <th scope="row" className="p-2 text-[#183a30]">{draft.topic}</th>
-                  <td className="p-2">{draft.published_at ?? '未发布'}{draft.published_url ? ` · ${draft.published_url}` : ' · 暂无链接'}</td>
-                  <td className="p-2">曝光、点赞、收藏、评论、咨询、点击、转化{draft.snapshots ? ` · 已录入 ${draft.snapshots} 期` : ' · 未采集'}</td>
-                  {['24h', '72h', '7d'].map((window) => <td key={window} className="p-2 whitespace-nowrap">{draft.snapshots ? '待划分窗口' : '未采集'}</td>)}
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
       {/* 系统能力与接入状态矩阵 */}
-      <section className="bg-[#fcfbf8] border border-[#dfd9cb] rounded p-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ebe6da] pb-2">
-          <h2 className="text-sm font-semibold text-[#183a30] flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-[#4c7364]" />
-            系统功能接入状态矩阵（透明区分真实能力 / Demo / 预留 / 未接通）
+      <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-3.5">
+        <div className="flex items-center justify-between border-b border-[#e2e8f0]/75 pb-2.5">
+          <h2 className="text-sm font-semibold text-[#0f172a] flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[#1d4ed8]" /> 系统能力与真实接入状态矩阵
           </h2>
-          <div className="flex flex-wrap gap-2 text-[11px]">
-            <button onClick={() => onNavigate('intelligence')} className="px-2 py-0.5 rounded bg-[#f5f2eb] hover:bg-[#ebe6da] text-[#183a30]">1. 情报采集 →</button>
-            <button onClick={() => onNavigate('analysis')} className="px-2 py-0.5 rounded bg-[#f5f2eb] hover:bg-[#ebe6da] text-[#183a30]">2. 爆款分析 →</button>
-            <button onClick={() => onNavigate('knowledge')} className="px-2 py-0.5 rounded bg-[#f5f2eb] hover:bg-[#ebe6da] text-[#183a30]">3. 知识检索 →</button>
-            <button onClick={() => onNavigate('creation')} className="px-2 py-0.5 rounded bg-[#183a30] text-white">4. AI 图文创作</button>
-          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {SYSTEM_CAPABILITY_MATRIX.map((cap) => (
-            <div key={cap.name} className="p-3 rounded bg-[#f5f2eb] border border-[#e5dfd2] text-xs space-y-1">
+            <div key={cap.name} className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs space-y-1.5">
               <div className="flex items-start justify-between gap-1.5">
-                <span className="font-medium text-[#1a2420]">{cap.name}</span>
+                <span className="font-medium text-[#0f172a]">{cap.name}</span>
                 <span
-                  className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] ${
+                  className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium ${
                     cap.status === 'verified'
-                      ? 'bg-[#e3ede8] text-[#183a30]'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/70'
                       : cap.status === 'demo'
-                      ? 'bg-[#ebe6da] text-[#8a6534]'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200/70'
                       : cap.status === 'reserved'
-                      ? 'bg-[#e6ebf0] text-[#3a556e]'
-                      : 'bg-[#f4e5e1] text-[#b05b43]'
+                      ? 'bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]/70'
+                      : 'bg-red-50 text-red-700 border border-red-200/70'
                   }`}
                 >
                   {cap.label}
                 </span>
               </div>
-              <div className="text-[11px] text-[#53605a] leading-relaxed">{cap.detail}</div>
+              <div className="text-[11px] text-[#64748b] leading-relaxed">{cap.detail}</div>
             </div>
           ))}
         </div>

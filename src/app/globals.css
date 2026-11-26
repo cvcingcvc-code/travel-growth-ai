@@ -1,29 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --bg-canvas: #f5f2eb;
-  --bg-surface: #fcfbf8;
-  --bg-subtle: #ebe6da;
-  --text-primary: #1a2420;
-  --text-secondary: #53605a;
-  --text-muted: #7c8781;
-  --brand-pine: #183a30;
-  --brand-pine-hover: #214e41;
-  --brand-sage: #4c7364;
-  --accent-ochre: #b48446;
-  --accent-terracotta: #b05b43;
-  --border-hairline: #dfd9cb;
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --brand-navy: #0f172a;
+  --brand-blue: #1d4ed8;
+  --brand-blue-hover: #1e40af;
+  --border-hairline: #e2e8f0;
 }
 
 html,
 body {
   background-color: var(--bg-canvas);
   color: var(--text-primary);
-  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* 精致滚动条 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -32,9 +29,70 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cfc8b8;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b5ad9b;
+  background: #94a3b8;
+}
+
+/* 首页沉浸式文旅封面：轻微电影感镜头缓慢推进 */
+@keyframes hero-ken-burns {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: scale(1.065) translate3d(0, -0.5%, 0);
+  }
+}
+
+.hero-slide-zoom {
+  animation: hero-ken-burns 8s ease-out forwards;
+  will-change: transform;
+}
+
+.hero-slide-zoom-paused {
+  animation-play-state: paused;
+}
+
+.hero-text-shadow {
+  text-shadow: 0 2px 20px rgba(15, 23, 42, 0.42), 0 1px 4px rgba(15, 23, 42, 0.35);
+}
+
+.hero-subtext-shadow {
+  text-shadow: 0 1px 12px rgba(15, 23, 42, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide-zoom {
+    animation: none !important;
+    transform: scale(1) !important;
+  }
+}
+
+/* 工作台全局山海光影 · 通透磨砂玻璃表面系统 */
+.tg-workspace-glass > div > section.bg-white,
+.tg-workspace-glass > div > div.bg-white,
+.tg-workspace-glass section.bg-white,
+.tg-workspace-glass article.bg-white,
+.tg-workspace-glass .bg-white.border {
+  background-color: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  border-color: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* 内嵌次级浅灰块升级为半透明轻玻璃，让底层自然光影柔和透出 */
+.tg-workspace-glass .bg-\[\#f8fafc\].border {
+  background-color: rgba(255, 255, 255, 0.58);
+  border-color: rgba(226, 232, 240, 0.75);
+}
+
+/* 保持弹窗与表单输入高可读性 */
+.tg-workspace-glass .fixed .bg-white,
+.tg-workspace-glass input.bg-white,
+.tg-workspace-glass textarea.bg-white,
+.tg-workspace-glass select.bg-white {
+  background-color: rgba(255, 255, 255, 0.95);
 }

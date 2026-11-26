@@ -1,5 +1,6 @@
 import { getDb } from '../db/client';
 import { newId, requireOrgAccess } from '../db/tenant';
+import { enforceAIGuards } from './guard';
 import type {
   AICapability,
   AIProviderId,
@@ -102,6 +103,34 @@ function hasEnvCredential(provider: AIProviderId, baseUrl?: string): { hasKey: b
   }
 }
 
+export function resolveEnvDefaultTextProvider(): { provider: AIProviderId; modelName: string } {
+  if (process.env.AI_DEFAULT_TEXT_PROVIDER) {
+    const p = process.env.AI_DEFAULT_TEXT_PROVIDER as AIProviderId;
+    return {
+      provider: p,
+      modelName:
+        process.env.AI_DEFAULT_TEXT_MODEL ||
+        (p === 'deepseek' ? 'deepseek-chat' : p === 'gemini' ? 'gemini-2.0-flash' : 'gpt-4o-mini'),
+    };
+  }
+  if (process.env.DEEPSEEK_API_KEY) {
+    return {
+      provider: 'deepseek',
+      modelName: process.env.AI_DEFAULT_TEXT_MODEL || 'deepseek-chat',
+    };
+  }
+  if (process.env.OPENAI_API_KEY) {
+    return { provider: 'openai', modelName: process.env.AI_DEFAULT_TEXT_MODEL || 'gpt-4o-mini' };
+  }
+  if (process.env.GEMINI_API_KEY) {
+    return { provider: 'gemini', modelName: process.env.AI_DEFAULT_TEXT_MODEL || 'gemini-2.0-flash' };
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    return { provider: 'claude', modelName: process.env.AI_DEFAULT_TEXT_MODEL || 'claude-3-5-sonnet-latest' };
+  }
+  return { provider: 'openai', modelName: process.env.AI_DEFAULT_TEXT_MODEL || 'gpt-4o-mini' };
+}
+
 export function getProviderStatuses(organizationId: string): ProviderRuntimeStatus[] {
   requireOrgAccess(organizationId);
   const db = getDb();
@@ -109,19 +138,27 @@ export function getProviderStatuses(organizationId: string): ProviderRuntimeStat
     .prepare('SELECT * FROM provider_configs WHERE organization_id = ?')
     .all(organizationId) as unknown as ProviderConfigRecord[];
 
+  const envDefaultText = resolveEnvDefaultTextProvider();
   const capabilities: AICapability[] = ['text', 'vision', 'image', 'embedding'];
   return capabilities.map((cap) => {
     const row = rows.find((r) => r.capability === cap);
-    const provider: AIProviderId = row?.provider ?? 'openai';
-    const modelName =
+    let provider: AIProviderId = row?.provider ?? (cap === 'text' ? envDefaultText.provider : 'openai');
+    let modelName =
       row?.model_name ??
       (cap === 'text'
-        ? process.env.AI_DEFAULT_TEXT_MODEL || 'gpt-4o-mini'
+        ? envDefaultText.modelName
         : cap === 'image'
         ? 'dall-e-3'
         : cap === 'embedding'
         ? 'text-embedding-3-small'
         : 'gpt-4o-mini');
+
+    // 若数据库中仍是未配置密钥的默认 openai，但环境变量已配置 DEEPSEEK_API_KEY 等真实密钥，则自动切至已配置供应商
+    if (cap === 'text' && !hasEnvCredential(provider, row?.base_url).hasKey && hasEnvCredential(envDefaultText.provider).hasKey) {
+      provider = envDefaultText.provider;
+      modelName = envDefaultText.modelName;
+    }
+
     const allowTestMode = row ? Boolean(row.allow_test_mode) : true;
     const baseUrl = row?.base_url ?? '';
     const cred = hasEnvCredential(provider, baseUrl);
@@ -256,6 +293,7 @@ async function callRealTextModel(
       body: JSON.stringify({
         model: modelName,
         temperature: req.temperature ?? 0.5,
+        max_tokens: Math.min(4096, Math.max(256, Number(process.env.AI_MAX_OUTPUT_TOKENS || 1800))),
         messages: [
           { role: 'system', content: req.systemPrompt },
           { role: 'user', content: req.userPrompt },
@@ -394,6 +432,8 @@ export async function generateTextWithRegistry(
   const textStatus = statuses.find((s) => s.capability === 'text')!;
 
   if (textStatus.hasValidKey) {
+    // 强制执行速率限制、每日调用次数与 Token 费用熔断
+    enforceAIGuards({ organizationId: req.organizationId });
     try {
       const res = await callRealTextModel(textStatus, req);
       const durationMs = Date.now() - started;
