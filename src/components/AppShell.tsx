@@ -2,32 +2,37 @@
 
 import React, { useState } from 'react';
 import {
-  Compass,
-  Radar,
-  Sparkles,
-  BookOpen,
-  PenTool,
-  Image as ImageIcon,
-  Cpu,
-  HelpCircle,
+  LayoutDashboard,
   Building2,
+  Package,
+  Bot,
+  Radar,
+  Target,
+  PenTool,
+  Send,
+  BarChart3,
+  Settings,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Bell,
   Plus,
   Menu,
   X,
-  ShieldCheck,
   RotateCcw,
-  PlayCircle,
 } from 'lucide-react';
 
 export type NavTab =
   | 'today'
+  | 'brand_kb'
+  | 'products'
+  | 'agent'
   | 'intelligence'
-  | 'analysis'
-  | 'knowledge'
+  | 'campaigns'
   | 'creation'
-  | 'assets'
-  | 'models'
-  | 'help';
+  | 'publish'
+  | 'review'
+  | 'settings';
 
 export interface OrgItem {
   id: string;
@@ -38,14 +43,16 @@ export interface OrgItem {
 }
 
 const NAV_ITEMS: Array<{ id: NavTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { id: 'today', label: '今日工作台', icon: Compass },
-  { id: 'intelligence', label: '市场情报中心', icon: Radar },
-  { id: 'analysis', label: '爆款分析中心', icon: Sparkles },
-  { id: 'knowledge', label: '企业知识库', icon: BookOpen },
-  { id: 'creation', label: 'AI 内容创作', icon: PenTool },
-  { id: 'assets', label: '素材与产品', icon: ImageIcon },
-  { id: 'models', label: '模型配置中心', icon: Cpu },
-  { id: 'help', label: '帮助与 Agent', icon: HelpCircle },
+  { id: 'today', label: '今日工作台', icon: LayoutDashboard },
+  { id: 'brand_kb', label: '企业与品牌', icon: Building2 },
+  { id: 'products', label: '产品管理', icon: Package },
+  { id: 'agent', label: '专属 Agent', icon: Bot },
+  { id: 'intelligence', label: '市场情报', icon: Radar },
+  { id: 'campaigns', label: '营销方案', icon: Target },
+  { id: 'creation', label: '内容生产', icon: PenTool },
+  { id: 'publish', label: '发布中心', icon: Send },
+  { id: 'review', label: '数据复盘', icon: BarChart3 },
+  { id: 'settings', label: '系统设置', icon: Settings },
 ];
 
 export function AppShell({
@@ -54,7 +61,8 @@ export function AppShell({
   orgs,
   activeOrgId,
   onOrgChange,
-  onCreateOrg,
+  onOpenOnboarding,
+  pendingReviewCount = 0,
   children,
 }: {
   activeTab: NavTab;
@@ -62,20 +70,36 @@ export function AppShell({
   orgs: OrgItem[];
   activeOrgId: string;
   onOrgChange: (orgId: string) => void;
-  onCreateOrg: (payload: { name: string; industryType: string; location: string; description: string }) => Promise<void>;
+  onOpenOnboarding: () => void;
+  pendingReviewCount?: number;
   children: React.ReactNode;
 }) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [orgName, setOrgName] = useState('');
-  const [industryType, setIndustryType] = useState('homestay');
-  const [location, setLocation] = useState('');
-  const [description, setDescription] = useState('');
-  const [creating, setCreating] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{
+    knowledge: Array<{ title: string; category: string }>;
+    products: Array<{ id: string; name: string }>;
+    campaigns: Array<{ id: string; title: string }>;
+    creations: Array<{ id: string; topic: string }>;
+  } | null>(null);
+  const [showNotif, setShowNotif] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [showGuideModal, setShowGuideModal] = useState(false);
 
   const activeOrg = orgs.find((o) => o.id === activeOrgId);
+
+  async function handleGlobalSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!searchQuery.trim() || !activeOrgId) {
+      setSearchResults(null);
+      return;
+    }
+    const res = await fetch(`/api/v1/search?q=${encodeURIComponent(searchQuery)}`, {
+      headers: { 'x-organization-id': activeOrgId },
+    });
+    const json = await res.json();
+    if (json.ok) setSearchResults(json.data);
+  }
 
   async function handleResetDemo() {
     setResetting(true);
@@ -83,7 +107,6 @@ export function AppShell({
       await fetch('/api/v1/demo/reset', { method: 'POST' });
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem('tg_active_org');
-        window.localStorage.removeItem('tg_demo_drafts');
         window.location.reload();
       }
     } finally {
@@ -91,38 +114,36 @@ export function AppShell({
     }
   }
 
-  async function handleSubmitOrg(e: React.FormEvent) {
-    e.preventDefault();
-    if (!orgName.trim()) return;
-    setCreating(true);
-    try {
-      await onCreateOrg({ name: orgName, industryType, location, description });
-      setOrgName('');
-      setLocation('');
-      setDescription('');
-      setShowCreateModal(false);
-    } finally {
-      setCreating(false);
-    }
-  }
-
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#f5f2eb] text-[#1a2420]">
-      {/* 左侧墨绿导航栏（桌面端） */}
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col bg-[#183a30] text-[#f5f2eb] border-r border-[#122c24] shrink-0">
-        <div className="px-5 py-5 border-b border-[#254e42]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded bg-[#b48446] text-[#fcfbf8] flex items-center justify-center font-semibold text-sm">
-              TG
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc] text-[#0f172a]">
+      {/* 左侧可折叠导航栏（Linear / 飞书浅灰白 + 深蓝激活态） */}
+      <aside
+        className={`hidden lg:flex lg:flex-col bg-white border-r border-[#e2e8f0] transition-all duration-200 shrink-0 ${
+          collapsed ? 'w-[68px]' : 'w-60'
+        }`}
+      >
+        <div className="h-14 px-3.5 border-b border-[#e2e8f0] flex items-center justify-between">
+          {!collapsed && (
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-md bg-[#1d4ed8] text-white flex items-center justify-center font-semibold text-xs shrink-0">
+                TG
+              </div>
+              <div className="truncate">
+                <div className="font-semibold text-sm text-[#0f172a] leading-tight">TravelGrowth AI</div>
+                <div className="text-[10px] text-[#64748b]">2.0 企业营销工作台</div>
+              </div>
             </div>
-            <div>
-              <div className="font-semibold tracking-wide text-base">TravelGrowth AI</div>
-              <div className="text-[11px] text-[#9eb5ab]">文旅内容营销智能工作台</div>
-            </div>
-          </div>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a] mx-auto lg:mx-0"
+            title={collapsed ? '展开导航' : '折叠导航'}
+          >
+            {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          </button>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -130,82 +151,51 @@ export function AppShell({
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded text-sm transition-colors text-left ${
+                title={collapsed ? item.label : undefined}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] transition-colors ${
                   isActive
-                    ? 'bg-[#265446] text-[#fcfbf8] font-medium border-l-2 border-[#c59b5f]'
-                    : 'text-[#c9d6d0] hover:bg-[#1f473b] hover:text-[#fcfbf8]'
+                    ? 'bg-[#eff6ff] text-[#1d4ed8] font-medium'
+                    : 'text-[#475569] hover:bg-[#f1f5f9] hover:text-[#0f172a]'
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span>{item.label}</span>
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1d4ed8]' : 'text-[#64748b]'}`} />
+                {!collapsed && <span className="truncate">{item.label}</span>}
               </button>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-[#254e42] text-xs text-[#9eb5ab] space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[#d5e0db]">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#c59b5f]" />
-            <span>企业数据严格隔离</span>
+        {!collapsed && (
+          <div className="p-3 border-t border-[#e2e8f0] text-[11px] text-[#64748b] space-y-1">
+            <div className="flex items-center justify-between">
+              <span>多企业严格隔离</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            </div>
+            <div>人工审核兜底 · 真实事实溯源</div>
           </div>
-          <div>默认人工审核发布 · 真实性校验</div>
-        </div>
+        )}
       </aside>
 
-      {/* 主内容区 */}
+      {/* 右侧主区域 */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* 顶部栏 */}
-        <header className="bg-[#fcfbf8] border-b border-[#dfd9cb] px-4 lg:px-6 py-3 flex items-center justify-between gap-3 sticky top-0 z-20">
-          <div className="flex items-center gap-3">
+        {/* 顶部工具栏：企业切换、全局搜索、消息通知、Agent 状态 */}
+        <header className="h-14 bg-white border-b border-[#e2e8f0] px-4 lg:px-6 flex items-center justify-between gap-3 sticky top-0 z-20">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-1.5 rounded border border-[#dfd9cb] text-[#183a30]"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="lg:hidden p-1.5 rounded-md border border-[#e2e8f0] text-[#475569]"
               aria-label="打开菜单"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold text-[#183a30] lg:hidden">TravelGrowth AI</span>
-              <span className="hidden lg:inline text-[#53605a]">
-                当前工作区：
-                <strong className="text-[#1a2420] ml-1">{activeOrg?.name ?? '加载中...'}</strong>
-              </span>
-              {activeOrg?.is_demo ? (
-                <span className="px-2 py-0.5 text-[11px] rounded bg-[#ebe6da] text-[#8a6534] border border-[#d8cfb8]">
-                  演示企业数据
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 text-[11px] rounded bg-[#e3ede8] text-[#183a30] border border-[#c3d6cd]">
-                  真实工作空间
-                </span>
-              )}
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowGuideModal(true)}
-              className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded border border-[#dfd9cb] bg-[#f5f2eb] hover:bg-[#ebe6da] text-[#183a30] text-xs font-medium"
-            >
-              <PlayCircle className="w-3.5 h-3.5 text-[#4c7364]" />
-              <span>演示引导</span>
-            </button>
-            <button
-              onClick={handleResetDemo}
-              disabled={resetting}
-              title="一键重置演示数据"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded border border-[#dfd9cb] bg-white hover:bg-[#f5f2eb] text-[#53605a] text-xs disabled:opacity-50"
-            >
-              <RotateCcw className={`w-3.5 h-3.5 ${resetting ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{resetting ? '重置中...' : '重置演示'}</span>
-            </button>
-            <div className="flex items-center gap-1.5 bg-[#f5f2eb] border border-[#dfd9cb] rounded px-2.5 py-1.5">
-              <Building2 className="w-4 h-4 text-[#4c7364]" />
+            <div className="flex items-center gap-1.5 bg-[#f8fafc] border border-[#e2e8f0] rounded-md px-2.5 py-1">
+              <Building2 className="w-3.5 h-3.5 text-[#1d4ed8] shrink-0" />
               <select
                 value={activeOrgId}
                 onChange={(e) => onOrgChange(e.target.value)}
                 aria-label="切换企业工作空间"
-                className="bg-transparent text-xs lg:text-sm text-[#1a2420] focus:outline-none max-w-[170px] lg:max-w-[240px]"
+                className="bg-transparent text-xs font-medium text-[#0f172a] focus:outline-none max-w-[160px] sm:max-w-[220px]"
               >
                 {orgs.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -214,19 +204,143 @@ export function AppShell({
                 ))}
               </select>
             </div>
+
+            {activeOrg?.is_demo ? (
+              <span className="hidden sm:inline-flex px-2 py-0.5 text-[11px] rounded bg-[#fef3c7] text-[#92400e] border border-[#fde68a]">
+                演示数据
+              </span>
+            ) : (
+              <span className="hidden sm:inline-flex px-2 py-0.5 text-[11px] rounded bg-[#eff6ff] text-[#1d4ed8] border border-[#bfdbfe]">
+                正式空间
+              </span>
+            )}
+          </div>
+
+          {/* 全局搜索 */}
+          <div className="relative hidden md:block flex-1 max-w-sm">
+            <form onSubmit={handleGlobalSearch} className="relative">
+              <Search className="w-3.5 h-3.5 text-[#94a3b8] absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (!e.target.value.trim()) setSearchResults(null);
+                }}
+                placeholder="全局搜索知识库、产品、方案与内容..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-[#e2e8f0] bg-[#f8fafc] focus:bg-white focus:outline-none focus:border-[#2563eb]"
+              />
+            </form>
+            {searchResults && (
+              <div className="absolute left-0 right-0 mt-1 bg-white border border-[#e2e8f0] rounded-md shadow-lg p-3 z-40 text-xs space-y-2 max-h-80 overflow-y-auto">
+                <div className="flex justify-between items-center text-[11px] text-[#64748b]">
+                  <span>搜索结果</span>
+                  <button onClick={() => setSearchResults(null)} className="hover:text-[#0f172a]">关闭</button>
+                </div>
+                {searchResults.knowledge.map((k, i) => (
+                  <button
+                    key={`k-${i}`}
+                    onClick={() => { onTabChange('brand_kb'); setSearchResults(null); }}
+                    className="w-full text-left p-1.5 rounded hover:bg-[#f1f5f9] block"
+                  >
+                    <span className="text-[#1d4ed8] mr-1">[知识]</span>{k.title}
+                  </button>
+                ))}
+                {searchResults.products.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { onTabChange('products'); setSearchResults(null); }}
+                    className="w-full text-left p-1.5 rounded hover:bg-[#f1f5f9] block"
+                  >
+                    <span className="text-emerald-700 mr-1">[产品]</span>{p.name}
+                  </button>
+                ))}
+                {searchResults.campaigns.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => { onTabChange('campaigns'); setSearchResults(null); }}
+                    className="w-full text-left p-1.5 rounded hover:bg-[#f1f5f9] block"
+                  >
+                    <span className="text-amber-700 mr-1">[方案]</span>{c.title}
+                  </button>
+                ))}
+                {searchResults.creations.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => { onTabChange('creation'); setSearchResults(null); }}
+                    className="w-full text-left p-1.5 rounded hover:bg-[#f1f5f9] block"
+                  >
+                    <span className="text-slate-700 mr-1">[内容]</span>{c.topic}
+                  </button>
+                ))}
+                {searchResults.knowledge.length + searchResults.products.length + searchResults.campaigns.length + searchResults.creations.length === 0 && (
+                  <div className="text-[#94a3b8] py-2 text-center">未命中相关业务记录</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 右侧操作：Agent 状态、通知、重置演示、新企业入驻 */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-[#183a30] hover:bg-[#214e41] text-[#fcfbf8] text-xs lg:text-sm font-medium transition-colors"
+              onClick={() => onTabChange('agent')}
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[#e2e8f0] bg-[#f8fafc] hover:bg-[#eff6ff] text-xs text-[#0f172a]"
+              title="查看专属营销 Agent 状态"
             >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">新建企业</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Agent 就绪</span>
+            </button>
+
+            <div className="relative">
+              <button
+                onClick={() => setShowNotif(!showNotif)}
+                className="p-1.5 rounded-md border border-[#e2e8f0] text-[#475569] hover:bg-[#f1f5f9] relative"
+                aria-label="消息通知"
+              >
+                <Bell className="w-4 h-4" />
+                {pendingReviewCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#dc2626] text-white text-[10px] flex items-center justify-center">
+                    {pendingReviewCount}
+                  </span>
+                )}
+              </button>
+              {showNotif && (
+                <div className="absolute right-0 mt-1.5 w-64 bg-white border border-[#e2e8f0] rounded-md shadow-lg p-3 z-40 text-xs space-y-2">
+                  <div className="font-semibold text-[#0f172a]">工作台提醒</div>
+                  <div className="p-2 rounded bg-[#f8fafc] text-[#475569]">
+                    当前企业有 <strong>{pendingReviewCount}</strong> 项待人工审核内容，请前往发布中心或内容生产复核。
+                  </div>
+                  <button
+                    onClick={() => { setShowNotif(false); onTabChange('publish'); }}
+                    className="w-full py-1.5 rounded bg-[#eff6ff] text-[#1d4ed8] font-medium"
+                  >
+                    前往发布中心审核
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleResetDemo}
+              disabled={resetting}
+              title="重置演示数据"
+              className="p-1.5 rounded-md border border-[#e2e8f0] text-[#64748b] hover:bg-[#f1f5f9]"
+            >
+              <RotateCcw className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
+            </button>
+
+            <button
+              onClick={onOpenOnboarding}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#1d4ed8] hover:bg-[#1e40af] text-white text-xs font-medium transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">企业入驻</span>
             </button>
           </div>
         </header>
 
-        {/* 移动端抽屉导航 */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-[#183a30] text-[#f5f2eb] px-3 py-3 space-y-1 border-b border-[#254e42]">
+        {/* 移动端导航抽屉 */}
+        {mobileOpen && (
+          <div className="lg:hidden bg-white border-b border-[#e2e8f0] p-2.5 grid grid-cols-2 gap-1">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               return (
@@ -234,10 +348,10 @@ export function AppShell({
                   key={item.id}
                   onClick={() => {
                     onTabChange(item.id);
-                    setMobileMenuOpen(false);
+                    setMobileOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-sm ${
-                    activeTab === item.id ? 'bg-[#265446] text-white' : 'text-[#c9d6d0]'
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs ${
+                    activeTab === item.id ? 'bg-[#eff6ff] text-[#1d4ed8] font-medium' : 'text-[#475569]'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -250,115 +364,6 @@ export function AppShell({
 
         <main className="flex-1 p-4 lg:p-6 max-w-[1440px] w-full mx-auto">{children}</main>
       </div>
-
-      {/* 新建企业工作空间弹窗 */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-[#fcfbf8] border border-[#dfd9cb] rounded-md w-full max-w-md p-5 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-[#183a30]">创建新企业工作空间</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-[#7c8781] hover:text-[#1a2420]">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmitOrg} className="space-y-3 text-sm">
-              <div>
-                <label className="block text-xs text-[#53605a] mb-1">企业/景区/民宿名称 *</label>
-                <input
-                  required
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="例如：西湖山舍精品民宿"
-                  className="w-full px-3 py-2 rounded border border-[#dfd9cb] bg-white focus:outline-none focus:border-[#183a30]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-[#53605a] mb-1">行业类型</label>
-                  <select
-                    value={industryType}
-                    onChange={(e) => setIndustryType(e.target.value)}
-                    className="w-full px-3 py-2 rounded border border-[#dfd9cb] bg-white"
-                  >
-                    <option value="homestay">精品民宿/酒店</option>
-                    <option value="scenic_spot">文旅景区/古镇</option>
-                    <option value="travel_agency">旅游企业/定制游</option>
-                    <option value="cultural_org">文化传播机构</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-[#53605a] mb-1">所在地</label>
-                  <input
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="如：浙江杭州"
-                    className="w-full px-3 py-2 rounded border border-[#dfd9cb] bg-white"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs text-[#53605a] mb-1">企业定位简述</label>
-                <textarea
-                  rows={2}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="简述核心特色、客群与文旅资源..."
-                  className="w-full px-3 py-2 rounded border border-[#dfd9cb] bg-white"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-3.5 py-1.5 rounded border border-[#dfd9cb] text-[#53605a]"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="px-4 py-1.5 rounded bg-[#183a30] text-white font-medium disabled:opacity-60"
-                >
-                  {creating ? '创建中...' : '确认创建'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {/* 新用户演示引导弹窗 */}
-      {showGuideModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-[#fcfbf8] border border-[#dfd9cb] rounded-md w-full max-w-lg p-5 shadow-lg space-y-4">
-            <div className="flex items-center justify-between border-b border-[#ebe6da] pb-2">
-              <h3 className="text-base font-semibold text-[#183a30]">新用户演示引导（5 分钟体验业务闭环）</h3>
-              <button onClick={() => setShowGuideModal(false)} className="text-[#7c8781] hover:text-[#1a2420]">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <ol className="list-decimal list-inside space-y-2 text-xs text-[#53605a] leading-relaxed">
-              <li><strong className="text-[#183a30]">切换示例企业</strong>：右上角可在「松间隐庐精品民宿」与「云溪古镇文旅景区」间切换，体验严格的企业数据隔离。</li>
-              <li><strong className="text-[#183a30]">市场情报与爆款拆解</strong>：进入「市场情报中心」查看来源追踪与去重，在「爆款分析中心」一键生成 11 维分析并保存为策略卡片。</li>
-              <li><strong className="text-[#183a30]">知识库混合检索</strong>：在「企业知识库」输入关键词（如 <code>私汤</code> / <code>三道茶</code>），体验已核实事实与[待核实]防幻觉提示。</li>
-              <li><strong className="text-[#183a30]">AI 图文创作与人工审核</strong>：在「AI 内容创作」生成多标题与 5 页图文分镜，在右侧大尺寸编辑器修改后保存草稿。</li>
-            </ol>
-            <div className="p-2.5 rounded bg-[#ebe6da] text-[11px] text-[#53605a]">
-              说明：在线 Demo 模式不依赖真实大模型 API Key，也不会修改正式企业数据库；您可随时点击顶部「重置演示」恢复初始状态。
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setShowGuideModal(false);
-                  onTabChange('creation');
-                }}
-                className="px-4 py-1.5 rounded bg-[#183a30] text-white text-xs font-medium"
-              >
-                立即前往「AI 内容创作」体验
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
