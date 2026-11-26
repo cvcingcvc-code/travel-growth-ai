@@ -69,3 +69,30 @@ body {
     transform: scale(1) !important;
   }
 }
+
+/* 工作台全局山海光影 · 通透磨砂玻璃表面系统 */
+.tg-workspace-glass > div > section.bg-white,
+.tg-workspace-glass > div > div.bg-white,
+.tg-workspace-glass section.bg-white,
+.tg-workspace-glass article.bg-white,
+.tg-workspace-glass .bg-white.border {
+  background-color: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  border-color: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* 内嵌次级浅灰块升级为半透明轻玻璃，让底层自然光影柔和透出 */
+.tg-workspace-glass .bg-\[\#f8fafc\].border {
+  background-color: rgba(255, 255, 255, 0.58);
+  border-color: rgba(226, 232, 240, 0.75);
+}
+
+/* 保持弹窗与表单输入高可读性 */
+.tg-workspace-glass .fixed .bg-white,
+.tg-workspace-glass input.bg-white,
+.tg-workspace-glass textarea.bg-white,
+.tg-workspace-glass select.bg-white {
+  background-color: rgba(255, 255, 255, 0.95);
+}
